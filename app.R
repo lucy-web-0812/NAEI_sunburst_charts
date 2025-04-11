@@ -176,12 +176,25 @@ ui <- fluidPage(
   # Show a plot of the generated distribution
   
   fluidRow(
-    column(7, plotlyOutput("sunburstplot", height = "900px")), 
+    column(7, plotlyOutput("sunburstplot", height = "750px")), 
     column(5, 
            div(class = "card p-3 mb-4 shadow-lg",
            h4(em("Changes in the sources of air pollutants in the UK:"), style = "margin-bottom: 20px; font-weight: bold;"),
+           textOutput("commentary"), 
            plotlyOutput("totals_graph", height = "500px")))
   ),
+  
+  
+  tags$div(
+    style = "margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; text-align: right; font-size: 16px; color: #555;",
+    "Source: ",
+    tags$a(href = "https://naei.energysecurity.gov.uk/data/data-selector?view=air-pollutants", 
+           "National Atmospheric Emissions Inventory", 
+           target = "_blank", 
+           style = "color: #555; text-decoration: underline;"),
+    " | Made by: Lucy Webster"
+  )
+  
 )
 
 
@@ -236,7 +249,6 @@ server <- function(input, output) {
     # If the user clicks on the plot, records the info
     
     click_event <- event_data("plotly_click")  # Capture click event
-    req(click_event)
     
     point_index <- click_event$pointNumber + 1
     
@@ -244,7 +256,34 @@ server <- function(input, output) {
     
     parent_of_selection <- hierachial_data()$parent[point_index] # And the parent
     
-    if (hierachial_data()$level[point_index] ==  "child") {
+    
+    if (is.null(click_event)) {return(
+      plot_ly(
+        type = 'scatter',
+        mode = 'text',
+        text = "Please click on a section of the chart.",
+        x = c(0.5),
+        y = c(0.5),
+        textposition = "middle center"
+      ) |> layout(
+        xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+        yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE), 
+        plot_bgcolor = "rgba(0,0,0,0)",   # Transparent plot area
+        paper_bgcolor = "rgba(0,0,0,0)"   # Transparent outer area
+      )
+    )
+      
+    } else if (selected_label == "Total") {  
+      
+      
+      filtered_data <- raw_data |> 
+        filter(pollutant == input$pollutant) |> 
+        group_by(NFR_wide.y, year, status) |> 
+        summarise(emission = sum(emission, na.rm = T)) |> 
+        rename(source = NFR_wide.y) |> 
+        filter(source == selected_label)
+      
+    } else if (hierachial_data()$level[point_index] ==  "child") {
       
       # So if it is the lowest level, its fine to keep the source description as the filter criteria as this is what it is based upon
       
@@ -277,7 +316,7 @@ server <- function(input, output) {
     }
     
     
-    ggplotly(  
+    ggplotly(
       ggplot(filtered_data) +
         geom_point(aes(x = as.Date(year), y = emission, colour = status, group = source, shape = status, linetype = status)) +
         geom_line(aes(x = as.Date(year), y = emission, colour = status, group = source, shape = status, linetype = status)) +
@@ -285,17 +324,76 @@ server <- function(input, output) {
         scale_x_date(name = "Year", limits = c(as.Date("1990-01-01"), as.Date("2050-12-31"))) +
         scale_y_continuous(name = "Emissions") +
         ggtitle(unique(filtered_data$source)) +
-        theme(panel.grid.major.x = element_blank(), 
-              panel.grid.major.y = element_line(colour = "lightgrey"), 
-              plot.title = element_text(face = "bold"))) |> 
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.major.y = element_line(colour = "lightgrey"),
+              plot.title = element_text(face = "bold"))) |>
       layout(legend = list(
-        x = 0.75, 
+        x = 0.75,
         y = 0.85
-      ))
-  }) 
+      )) 
+    })
+    
+    
+  #   animated_data <- filtered_data |> 
+  #     mutate(year = as.Date(year))  # Ensure year is Date
+  #   
+  # 
+  #   
+  #   plot_ly(
+  #     data = animated_data,
+  #     x = ~year,
+  #     y = ~emission,
+  #     color = ~status,
+  #     frame = ~year,  
+  #     type = 'scatter',
+  #     mode = 'lines+markers',
+  #     line = list(shape = "linear"),
+  #     marker = list(size = 8),
+  #     text = ~paste("Source:", source, "<br>Emission:", round(emission, 1)),
+  #     hoverinfo = 'text'
+  #   ) |> 
+  #     layout(
+  #       title = list(
+  #         text = unique(animated_data$source),
+  #         font = list(size = 18, face = "bold")
+  #       ),
+  #       xaxis = list(title = "Year", range = c(as.Date("1990-01-01"), as.Date("2050-12-31"))),
+  #       yaxis = list(title = "Emissions"),
+  #       legend = list(x = 0.75, y = 0.85),
+  #       plot_bgcolor = "rgba(0,0,0,0)",
+  #       paper_bgcolor = "rgba(0,0,0,0)"
+  #     ) |> 
+  #     animation_opts(
+  #       frame = 100,
+  #       transition = 0,
+  #       redraw = FALSE
+  #     ) |> 
+  #     htmlwidgets::onRender("
+  #       function(el,x) {
+  #         Plotly.animate(el);
+  #       }")
+  #   
+  #   
+  #   
+  #   
+  # }) 
+  # 
+  
+  
+  output$commentary <- renderText({
+    
+    if (input$pollutant == "NOx\n(as NO2)") {
+      "Nitrogen Oxide emissions have fallen due to cleaner transport policies."
+    } else if (input$pollutant == "PM2.5" | input$pollutant == "PM10") {
+      paste0("UK emissions of particulate matter have changed significantly.")
+    }
+  })
+  
   
   
 }
+  
+  
 
 # Run the application 
 shinyApp(ui = ui, server = server)
