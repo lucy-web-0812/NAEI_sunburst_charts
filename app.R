@@ -2,6 +2,7 @@ library(shinydashboard)
 library(shiny)
 library(plotly)
 library(tidyverse)
+library(shinycssloaders)
 
 # Doing some changes that may appear in the git 
 
@@ -158,35 +159,41 @@ ui <- fluidPage(
   fluidRow(
     column(12,
            div(class = "card p-3 mb-4 shadow-sm",  # Bootstrap classes
-               h4(em("View emission proportions by pollutant and year:"), style = "margin-bottom: 20px; font-weight: bold;"),
+               style = "height: 20vh;", 
+               h5(em("View emission proportions by pollutant and year:"), style = "margin-bottom: 5px; font-weight: bold;"),
                fluidRow(
                  column(4,
                         selectInput("pollutant",
                                     "Pollutant:",
+                                    selected = "PM10",
                                     choices = unique(raw_data$pollutant))),
                  column(4,
                         selectInput("year",
                                     "Year:",
+                                    selected = "2022",
                                     choices = substr(unique(raw_data$year), 1, 4)))
                )
            )
     )
   ), 
   
+
+  
   # Show a plot of the generated distribution
   
   fluidRow(
-    column(7, plotlyOutput("sunburstplot", height = "750px")), 
+    column(7, plotlyOutput("sunburstplot", height = "70vh") |>  withSpinner(color="#0dc5c1", type = 6)), 
     column(5, 
            div(class = "card p-3 mb-4 shadow-lg",
-           h4(em("Changes in the sources of air pollutants in the UK:"), style = "margin-bottom: 20px; font-weight: bold;"),
+               style = "height: 70vh;", 
+           h5(em("Changes in the sources of air pollutants in the UK:"), style = "margin-bottom: 20px; font-weight: bold;"),
            textOutput("commentary"), 
-           plotlyOutput("totals_graph", height = "500px")))
+           plotlyOutput("totals_graph") |>  withSpinner(color="#0dc5c1", type = 6)))
   ),
   
   
   tags$div(
-    style = "margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; text-align: right; font-size: 16px; color: #555;",
+    style = "margin-top: 1px; padding-top: 1px; border-top: 1px solid #ccc; text-align: right; font-size: 16px; color: #555;",
     "Source: ",
     tags$a(href = "https://naei.energysecurity.gov.uk/data/data-selector?view=air-pollutants", 
            "National Atmospheric Emissions Inventory", 
@@ -201,6 +208,7 @@ ui <- fluidPage(
 # ----- And the server function ------
 server <- function(input, output) {
   thematic::thematic_shiny()
+  
   
   # Run the function on the selected data 
   
@@ -323,7 +331,7 @@ server <- function(input, output) {
         scale_colour_manual(values = c("#3E5622", "darkgrey")) +
         scale_x_date(name = "Year", limits = c(as.Date("1990-01-01"), as.Date("2050-12-31"))) +
         scale_y_continuous(name = "Emissions") +
-        ggtitle(unique(filtered_data$source)) +
+        ggtitle(ggtitle(paste(unique(filtered_data$source), collapse = ", "))) +
         theme(panel.grid.major.x = element_blank(),
               panel.grid.major.y = element_line(colour = "lightgrey"),
               plot.title = element_text(face = "bold"))) |>
@@ -333,51 +341,7 @@ server <- function(input, output) {
       )) 
     })
     
-    
-  #   animated_data <- filtered_data |> 
-  #     mutate(year = as.Date(year))  # Ensure year is Date
-  #   
-  # 
-  #   
-  #   plot_ly(
-  #     data = animated_data,
-  #     x = ~year,
-  #     y = ~emission,
-  #     color = ~status,
-  #     frame = ~year,  
-  #     type = 'scatter',
-  #     mode = 'lines+markers',
-  #     line = list(shape = "linear"),
-  #     marker = list(size = 8),
-  #     text = ~paste("Source:", source, "<br>Emission:", round(emission, 1)),
-  #     hoverinfo = 'text'
-  #   ) |> 
-  #     layout(
-  #       title = list(
-  #         text = unique(animated_data$source),
-  #         font = list(size = 18, face = "bold")
-  #       ),
-  #       xaxis = list(title = "Year", range = c(as.Date("1990-01-01"), as.Date("2050-12-31"))),
-  #       yaxis = list(title = "Emissions"),
-  #       legend = list(x = 0.75, y = 0.85),
-  #       plot_bgcolor = "rgba(0,0,0,0)",
-  #       paper_bgcolor = "rgba(0,0,0,0)"
-  #     ) |> 
-  #     animation_opts(
-  #       frame = 100,
-  #       transition = 0,
-  #       redraw = FALSE
-  #     ) |> 
-  #     htmlwidgets::onRender("
-  #       function(el,x) {
-  #         Plotly.animate(el);
-  #       }")
-  #   
-  #   
-  #   
-  #   
-  # }) 
-  # 
+  
   
   
   output$commentary <- renderText({
@@ -385,7 +349,7 @@ server <- function(input, output) {
     if (input$pollutant == "NOx\n(as NO2)") {
       "Nitrogen Oxide emissions have fallen due to cleaner transport policies."
     } else if (input$pollutant == "PM2.5" | input$pollutant == "PM10") {
-      paste0("UK emissions of particulate matter have changed significantly.")
+      paste0("UK emissions of Particulate Matter (PM) have changed significantly since 1990.")
     }
   })
   
