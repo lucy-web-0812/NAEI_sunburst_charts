@@ -347,7 +347,7 @@ server <- function(input, output) {
         text = paste0("Year: ", year, "<br>Emission: ", round(emission, 2), " ", Units, "<br>Status: ", status, "<br>Source: ", source))) +
         scale_colour_manual(values = c("#3E5622", "darkgrey")) +
         scale_x_date(name = "Year", limits = c(as.Date("1990-01-01"), as.Date("2050-12-31"))) +
-        scale_y_continuous(name = paste0("Emissions (", unique(filtered_data$Unit), ")")) +
+        scale_y_continuous(name = paste0("Emissions (", unique(filtered_data$Units), ")")) +
         ggtitle(ggtitle(paste(unique(filtered_data$source), collapse = ", "))) +
         theme(panel.grid.major.x = element_blank(),
               panel.grid.major.y = element_line(colour = "lightgrey"),
@@ -363,13 +363,42 @@ server <- function(input, output) {
   
   
   
-  output$commentary <- renderText({
+  output$commentary <-  renderText({
     
-    if (input$pollutant == "NOx\n(as NO2)") {
-      "Nitrogen Oxide emissions have fallen due to cleaner transport policies."
-    } else if (input$pollutant == "PM2.5" | input$pollutant == "PM10") {
-      paste0("UK emissions of Particulate Matter (PM) have changed significantly since 1990.")
+    req(input$pollutant) 
+    
+    # Main source in 1990
+    top_1990 <- raw_data |>
+      filter(pollutant == input$pollutant, year == "1990-01-01") |>
+      group_by(source_description) |>
+      summarise(total_emission = sum(emission, na.rm = TRUE)) |>
+      slice_max(total_emission, n = 1)
+    
+    # Main source in 2050
+    top_2050 <- raw_data |>
+      filter(pollutant == input$pollutant, year == "2050-01-01") |>
+      group_by(source_description) |>
+      summarise(total_emission = sum(emission, na.rm = TRUE)) |>
+      slice_max(total_emission, n = 1)
+    
+    
+    if (top_2050$total_emission[1] != 0) {
+      paste0(
+        "For ", input$pollutant, ": in 1990 the largest source was ",
+        top_1990$source_description, " (", round(top_1990$total_emission, 1), " kt). ",
+        "By 2050 the main source is projected to be ",
+        top_2050$source_description, " (", round(top_2050$total_emission, 1), " kt)."
+      )
+    } else {
+      paste0(
+        "For ", input$pollutant, ": in 1990 the largest source was ",
+        top_1990$source_description, " (", round(top_1990$total_emission, 1), " kt). ",
+        "The projections to 2050 are not available for this pollutant."
+        
+      )
     }
+    
+    
   })
   
   
