@@ -6,16 +6,27 @@ library(shinycssloaders)
 
 # Doing some changes that may appear in the git 
 
+
+
+pollutants_and_units <- read_csv("list_of_pollutants.csv") |> 
+  mutate(Pollutant = gsub("[\r]", "", Pollutant), 
+         Pollutant = ifelse(Pollutant == "Total 1-4", "Total PAHs", Pollutant))
+
 # Pre-processing 
 
 raw_data <- read.csv("combined_historic_and_projected.csv") |> 
-  mutate(NFR_wide.y = ifelse(NFR_wide.y == "Fuel Combustion Activities", NFR_mid, NFR_wide.y)) 
+  mutate(NFR_wide.y = ifelse(NFR_wide.y == "Fuel Combustion Activities", NFR_mid, NFR_wide.y)) |> 
+  left_join(pollutants_and_units,join_by(pollutant == Pollutant))
+
+
 
 # Make all the colours consistent across the sectors, even when pollutant selected changes 
 
 colour_data <-  raw_data |> 
   select(c(NFR_wide.y, source_description)) |> 
   distinct()
+
+
 
 
 # For the purposes of visualisation, I think we need to break up the Fuel Combustion Activities section... 
@@ -233,8 +244,12 @@ server <- function(input, output) {
       marker = list(colors =  hierachial_data()$colour,
                     line = list(color = "white", width = 1)),
       insidetextorientation = 'radial', 
-      textinfo = 'label+percent parent', 
-      hoverinfo = 'label+percent parent+value'
+      text = paste0(
+        hierachial_data()$label, "<br>",
+        round(hierachial_data()$emission, 2), " ",
+        unique(raw_data$Units[raw_data$pollutant == input$pollutant])
+      ), 
+      hoverinfo = 'text'
     ) |> layout(
       paper_bgcolor = "rgba(0,0,0,0)",  # Fully transparent background
       plot_bgcolor = "rgba(0,0,0,0)",  # Background of the plotting region is transparent too 
@@ -317,7 +332,7 @@ server <- function(input, output) {
       
       filtered_data <- raw_data |> 
         filter(pollutant == input$pollutant) |> 
-        group_by(NFR_wide.y, year, status) |> 
+        group_by(NFR_wide.y, year, status, Units) |> 
         summarise(emission = sum(emission, na.rm = T)) |> 
         rename(source = NFR_wide.y) |> 
         filter(source == selected_label)
@@ -326,15 +341,19 @@ server <- function(input, output) {
     
     ggplotly(
       ggplot(filtered_data) +
-        geom_point(aes(x = as.Date(year), y = emission, colour = status, group = source, shape = status, linetype = status)) +
-        geom_line(aes(x = as.Date(year), y = emission, colour = status, group = source, shape = status, linetype = status)) +
+        geom_point(aes(x = as.Date(year), y = emission, colour = status, group = source, shape = status, linetype = status,  
+                   text = paste0("Year: ", year, "<br>Emission: ", round(emission, 2), " ", Units, "<br>Status: ", status, "<br>Source: ", source))) +
+        geom_line(aes(x = as.Date(year), y = emission, colour = status, group = source, shape = status, linetype = status, 
+        text = paste0("Year: ", year, "<br>Emission: ", round(emission, 2), " ", Units, "<br>Status: ", status, "<br>Source: ", source))) +
         scale_colour_manual(values = c("#3E5622", "darkgrey")) +
         scale_x_date(name = "Year", limits = c(as.Date("1990-01-01"), as.Date("2050-12-31"))) +
-        scale_y_continuous(name = "Emissions") +
+        scale_y_continuous(name = paste0("Emissions (", unique(filtered_data$Unit), ")")) +
         ggtitle(ggtitle(paste(unique(filtered_data$source), collapse = ", "))) +
         theme(panel.grid.major.x = element_blank(),
               panel.grid.major.y = element_line(colour = "lightgrey"),
-              plot.title = element_text(face = "bold"))) |>
+              plot.title = element_text(face = "bold")), 
+      tooltip = "text"
+    ) |>
       layout(legend = list(
         x = 0.75,
         y = 0.85
