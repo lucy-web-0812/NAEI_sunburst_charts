@@ -390,30 +390,6 @@ see individual source trends</li>
 commentary for each pollutant</li>
 </ul>
 </div>
-<div id="data-table" class="section level3">
-<h3>📊 Data Table</h3>
-<ul>
-<li><strong>Detailed View</strong>: Expandable table with complete
-emissions data</li>
-<li><strong>Interactive Features</strong>: Sort, filter, and search
-functionality</li>
-<li><strong>Export Options</strong>: Download data as CSV or Excel</li>
-<li><strong>Visual Indicators</strong>: Color-coded emission levels</li>
-</ul>
-</div>
-<div id="user-friendly-interface" class="section level3">
-<h3>💡 User-Friendly Interface</h3>
-<ul>
-<li><strong>Responsive Design</strong>: Works on desktop, tablet, and
-mobile</li>
-<li><strong>Clear Navigation</strong>: Intuitive controls and help
-text</li>
-<li><strong>Professional Styling</strong>: Modern Bootstrap-based
-design</li>
-<li><strong>Loading Indicators</strong>: Smooth user experience with
-progress spinners</li>
-</ul>
-</div>
 </div>
 <div id="installation" class="section level2">
 <h2>Installation</h2>
@@ -494,7 +470,7 @@ shiny::runApp(launch.browser = TRUE)</code></pre></li>
 <li>Click on sections to drill down into specific sources</li>
 <li>Use the “Reset Chart View” button to return to overview</li>
 </ul></li>
-<li><strong>Analyze Trends</strong>:
+<li><strong>Analyse Trends</strong>:
 <ul>
 <li>The trends graph updates based on your sunburst selections</li>
 <li>Historical data shows actual emissions (green)</li>
@@ -542,7 +518,7 @@ from transport and solvents</li>
 ├── app.R                              # Main application file
 ├── combined_historic_and_projected.csv # Data file
 ├── README.md                          # This file
-└── screenshot.png                     # Optional screenshot</code></pre>
+</code></pre>
 </div>
 <div id="troubleshooting" class="section level2">
 <h2>Troubleshooting</h2>
@@ -581,20 +557,12 @@ slowdowns with large datasets</li>
 </ul>
 </div>
 </div>
-<div id="customization" class="section level2">
-<h2>Customization</h2>
-<div id="adding-new-pollutants" class="section level3">
-<h3>Adding New Pollutants</h3>
-<p>Update the <code>pollutant_units</code> list in the code:</p>
-<pre class="r"><code>pollutant_units &lt;- list(
-  &quot;Your_Pollutant&quot; = &quot;your_units&quot;,
-  # ... existing pollutants
-)</code></pre>
-</div>
-<div id="modifying-colors" class="section level3">
-<h3>Modifying Colors</h3>
-<p>Customize the color palette by updating the <code>base_colours</code>
-vector:</p>
+<div id="customisation" class="section level2">
+<h2>Customisation</h2>
+<div id="modifying-colours" class="section level3">
+<h3>Modifying Colours</h3>
+<p>Customize the colour palette by updating the
+<code>base_colours</code> vector:</p>
 <pre class="r"><code>base_colours &lt;- c(&quot;#your_color1&quot;, &quot;#your_color2&quot;, ...)</code></pre>
 </div>
 <div id="enhancing-commentary" class="section level3">
@@ -604,70 +572,18 @@ vector:</p>
 <pre class="r"><code>&quot;Your_Pollutant&quot; = &quot;Your custom commentary about this pollutant...&quot;</code></pre>
 </div>
 </div>
-<div id="contributing" class="section level2">
-<h2>Contributing</h2>
-<p>To contribute to this project:</p>
-<ol style="list-style-type: decimal">
-<li>Fork the repository</li>
-<li>Create a feature branch
-(<code>git checkout -b feature/new-feature</code>)</li>
-<li>Commit your changes
-(<code>git commit -am &#39;Add new feature&#39;</code>)</li>
-<li>Push to the branch
-(<code>git push origin feature/new-feature</code>)</li>
-<li>Create a Pull Request</li>
-</ol>
-</div>
 <div id="technical-details" class="section level2">
 <h2>Technical Details</h2>
 <ul>
-<li><strong>Framework</strong>: Built with R Shiny</li>
-<li><strong>Visualization</strong>: Plotly for interactive charts,
-ggplot2 for static plots</li>
-<li><strong>Styling</strong>: Bootstrap 5 with custom CSS</li>
-<li><strong>Data Processing</strong>: dplyr for efficient data
-manipulation</li>
-<li><strong>Responsive</strong>: Mobile-friendly design using Bootstrap
-grid system</li>
+<li><p><strong>Framework</strong>: Built with R Shiny</p></li>
+<li><p><strong>Visualization</strong>: Plotly for interactive charts,
+ggplot2 for static plots</p></li>
+<li><p><strong>Styling</strong>: Bootstrap 5 with custom CSS</p></li>
+<li><p><strong>Data Processing</strong>: dplyr for efficient data
+manipulation</p></li>
+<li><p><strong>Responsive</strong>: Mobile-friendly design using
+Bootstrap grid system</p></li>
 </ul>
-</div>
-<div id="license" class="section level2">
-<h2>License</h2>
-<p>This project is licensed under the MIT License - see the <a href="LICENSE">LICENSE</a> file for details.</p>
-</div>
-<div id="acknowledgments" class="section level2">
-<h2>Acknowledgments</h2>
-<ul>
-<li><strong>Data Source</strong>: National Atmospheric Emissions
-Inventory (NAEI)</li>
-<li><strong>Original Developer</strong>: Lucy Webster</li>
-<li><strong>R Community</strong>: For excellent packages that made this
-possible</li>
-</ul>
-</div>
-<div id="version-history" class="section level2">
-<h2>Version History</h2>
-<ul>
-<li><strong>v2.0</strong>: Enhanced UI, added units, improved
-interactivity</li>
-<li><strong>v1.0</strong>: Initial sunburst visualization</li>
-</ul>
-</div>
-<div id="support" class="section level2">
-<h2>Support</h2>
-<p>For questions, issues, or suggestions:</p>
-<ol style="list-style-type: decimal">
-<li>Check the troubleshooting section above</li>
-<li>Search existing GitHub issues</li>
-<li>Create a new issue with:
-<ul>
-<li>R version (<code>R.version.string</code>)</li>
-<li>Package versions (<code>sessionInfo()</code>)</li>
-<li>Error messages (full text)</li>
-<li>Steps to reproduce</li>
-</ul></li>
-</ol>
-<hr />
 <p><strong>Made with ❤️ using R Shiny</strong></p>
 </div>
 </div>

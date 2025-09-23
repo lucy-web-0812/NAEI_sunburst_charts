@@ -164,6 +164,13 @@ ui <- fluidPage(
   
   theme = bslib::bs_theme(bootswatch = "morph"),
   
+  
+  tags$style(HTML("
+    body, .card, .well, .panel, .container-fluid {
+      background-color: white !important;
+    }
+  ")),
+  
   # Application title
   titlePanel("Sources of air pollutants"),
   
@@ -249,7 +256,8 @@ server <- function(input, output) {
         round(hierachial_data()$emission, 2), " ",
         unique(raw_data$Units[raw_data$pollutant == input$pollutant])
       ), 
-      hoverinfo = 'text'
+      hoverinfo = 'text', 
+      textinfo = 'text',
     ) |> layout(
       paper_bgcolor = "rgba(0,0,0,0)",  # Fully transparent background
       plot_bgcolor = "rgba(0,0,0,0)",  # Background of the plotting region is transparent too 
@@ -321,12 +329,14 @@ server <- function(input, output) {
       # However, it needs to be different for the next level up.
       #### AT THE MOMENT we have the wrong order of what is being selected, in that we want to see breakdown befpre clicking. Parent and child should be the same (coode for the chuld atm)
       
-      filtered_data <- raw_data |>
+      # Instead of plotting only the parent total,
+        # get all of its children (source_description)
+        filtered_data <- raw_data |>
         filter(pollutant == input$pollutant) |>
-        group_by(NFR_mid, year, status) |>
-        summarise(emission = sum(emission, na.rm = T)) |>
-        rename(source = NFR_mid) |>
-        filter(source == selected_label)
+        filter(NFR_mid == selected_label) |> 
+        group_by(source_description, year, status, Units) |> 
+        summarise(emission = sum(emission, na.rm = TRUE), .groups = "drop") |>
+        rename(source = source_description)
       
     } else if (hierachial_data()$level[point_index] == "grandparent") {
       

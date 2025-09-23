@@ -8,10 +8,10 @@ An interactive Shiny web application for exploring UK air pollutant emissions da
 
 ### 🎯 Interactive Sunburst Chart
 
--   **Hierarchical Visualization**: Explore emissions data across three levels (sectors, sub-sectors, and specific sources)
+-   **Hierarchical Visualisation**: Explore emissions data across three levels (sectors, sub-sectors, and specific sources)
 -   **Dynamic Filtering**: Select different pollutants and years
--   **Click-to-Drill**: Click on chart sections to explore detailed trends
--   **Units Display**: Proper units shown throughout (kt, kt NO2 equivalent, etc.)
+-   **Click-to-Explore**: Click on chart sections to explore detailed trends
+-   **Units Display**: Appropriate units shown throughout (kt, kt NO2 equivalent, etc.)
 
 ### 📈 Historical Trends Analysis
 
@@ -20,25 +20,7 @@ An interactive Shiny web application for exploring UK air pollutant emissions da
 -   **Source-Specific Trends**: Click sunburst sections to see individual source trends
 -   **Contextual Information**: Detailed background commentary for each pollutant
 
-### 📊 Data Table
-
--   **Detailed View**: Expandable table with complete emissions data
--   **Interactive Features**: Sort, filter, and search functionality
--   **Export Options**: Download data as CSV or Excel
--   **Visual Indicators**: Color-coded emission levels
-
-### 💡 User-Friendly Interface
-
--   **Responsive Design**: Works on desktop, tablet, and mobile
--   **Clear Navigation**: Intuitive controls and help text
--   **Professional Styling**: Modern Bootstrap-based design
--   **Loading Indicators**: Smooth user experience with progress spinners
-
 ## Installation
-
-### Prerequisites
-
-Ensure you have R (version 4.0 or higher) installed on your system.
 
 ### Required R Packages
 
@@ -51,11 +33,7 @@ install.packages(c(
   "plotly",          # Interactive plotting
   "dplyr",           # Data manipulation
   "ggplot2",         # Static plotting
-  "DT"               # Interactive data tables
-))
-
-# Optional packages for enhanced features
-install.packages(c(
+  "DT",               # Interactive data tables
   "shinycssloaders", # Loading animations
   "bslib",           # Bootstrap themes
   "thematic"         # Plot theming
@@ -136,7 +114,7 @@ your-app-directory/
 ├── app.R                              # Main application file
 ├── combined_historic_and_projected.csv # Data file
 ├── README.md                          # This file
-└── screenshot.png                     # Optional screenshot
+
 ```
 
 ## Troubleshooting
@@ -181,17 +159,6 @@ your-app-directory/
 
 ## Customisation
 
-### Adding New Pollutants
-
-Update the `pollutant_units` list in the code:
-
-``` r
-pollutant_units <- list(
-  "Your_Pollutant" = "your_units",
-  # ... existing pollutants
-)
-```
-
 ### Modifying Colours
 
 Customize the colour palette by updating the `base_colours` vector:
@@ -208,51 +175,19 @@ Add pollutant-specific information in the `get_commentary()` function:
 "Your_Pollutant" = "Your custom commentary about this pollutant..."
 ```
 
-## Contributing
-
-To contribute to this project:
-
-1.  Fork the repository
-2.  Create a feature branch (`git checkout -b feature/new-feature`)
-3.  Commit your changes (`git commit -am 'Add new feature'`)
-4.  Push to the branch (`git push origin feature/new-feature`)
-5.  Create a Pull Request
 
 ## Technical Details
 
 -   **Framework**: Built with R Shiny
+
 -   **Visualization**: Plotly for interactive charts, ggplot2 for static plots
+
 -   **Styling**: Bootstrap 5 with custom CSS
+
 -   **Data Processing**: dplyr for efficient data manipulation
+
 -   **Responsive**: Mobile-friendly design using Bootstrap grid system
 
-## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
--   **Data Source**: National Atmospheric Emissions Inventory (NAEI)
--   **Original Developer**: Lucy Webster
--   **R Community**: For excellent packages that made this possible
-
-## Version History
-
--   **v2.0**: Enhanced UI, added units, improved interactivity
--   **v1.0**: Initial sunburst visualization
-
-## Support
-
-For questions, issues, or suggestions:
-
-1.  Check the troubleshooting section above
-2.  Search existing GitHub issues
-3.  Create a new issue with:
-    -   R version (`R.version.string`)
-    -   Package versions (`sessionInfo()`)
-    -   Error messages (full text)
-    -   Steps to reproduce
-
-------------------------------------------------------------------------
 
 **Made with ❤️ using R Shiny**
