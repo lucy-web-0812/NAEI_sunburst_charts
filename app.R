@@ -59,6 +59,18 @@ colour_data <- raw_data |>
   )
 
 
+# and mapping colours for the line chart data
+
+line_colour_map <- colour_data |>
+  select(source, NFR_wide.y, source_description, child_colour) |>
+  distinct() |>
+  pivot_longer(cols = c(source, source_description, NFR_wide.y), names_to = "heirachy", values_to = "source") |> 
+  select(source, child_colour) |> 
+  rename(historic_colour = child_colour)
+
+
+
+
 # Getting a list of each hierachial level and their colours 
 
 grandparent_colours <- colour_data |> 
@@ -163,8 +175,6 @@ sunburst_dataprocessing <- function(pollutant_species, selected_year){
 ui <- fluidPage(
   
   theme = bslib::bs_theme(bootswatch = "morph"),
-  
-  
   tags$style(HTML("
     body, .card, .well, .panel, .container-fluid {
       background-color: white !important;
@@ -309,10 +319,12 @@ server <- function(input, output) {
       
       filtered_data <- raw_data |> 
         filter(pollutant == input$pollutant) |> 
-        group_by(NFR_wide.y, year, status) |> 
+        group_by(NFR_wide.y, year, status, Units) |> 
         summarise(emission = sum(emission, na.rm = T)) |> 
         rename(source = NFR_wide.y) |> 
-        filter(source == selected_label)
+        group_by(year, Units, status) |> 
+        summarise(emission = sum(emission, na.rm = T)) |> 
+        mutate(source = "Total")
       
     } else if (hierachial_data()$level[point_index] ==  "child") {
       
@@ -349,19 +361,56 @@ server <- function(input, output) {
     }
     
     
+    
+    filtered_data_with_colours <- filtered_data |>  
+      left_join(line_colour_map, by = "source") |>
+      mutate(
+        plot_colour = ifelse(status == "Historic", historic_colour, "darkgrey")
+      ) |> 
+      mutate(plot_colour = ifelse(source == "Total" & status == "Historic", "#394F49", plot_colour))
+    
+    
     ggplotly(
-      ggplot(filtered_data) +
-        geom_point(aes(x = as.Date(year), y = emission, colour = status, group = source, shape = status, linetype = status,  
-                   text = paste0("Year: ", year, "<br>Emission: ", round(emission, 2), " ", Units, "<br>Status: ", status, "<br>Source: ", source))) +
-        geom_line(aes(x = as.Date(year), y = emission, colour = status, group = source, shape = status, linetype = status, 
-        text = paste0("Year: ", year, "<br>Emission: ", round(emission, 2), " ", Units, "<br>Status: ", status, "<br>Source: ", source))) +
-        scale_colour_manual(values = c("#3E5622", "darkgrey")) +
+      ggplot(filtered_data_with_colours) +
+        geom_point(
+          aes(
+            x = as.Date(year),
+            y = emission,
+            colour = plot_colour, 
+            group = interaction(source, status),   
+            shape = status,
+            linetype = status,
+            text = paste0(
+              "Year: ", year,
+              "<br>Emission: ", round(emission, 2), " ", Units,
+              "<br>Status: ", status,
+              "<br>Source: ", source
+            )
+          )
+        ) +
+        geom_line(
+          aes(
+            x = as.Date(year),
+            y = emission,
+            colour = plot_colour,
+            group = interaction(source, status),
+            linetype = status,
+            text = paste0(
+              "Year: ", year,
+              "<br>Emission: ", round(emission, 2), " ", Units,
+              "<br>Status: ", status,
+              "<br>Source: ", source
+            )
+          )
+        ) +
+        scale_colour_identity() +
         scale_x_date(name = "Year", limits = c(as.Date("1990-01-01"), as.Date("2050-12-31"))) +
         scale_y_continuous(name = paste0("Emissions (", unique(filtered_data$Units), ")")) +
         ggtitle(ggtitle(paste(unique(filtered_data$source), collapse = ", "))) +
         theme(panel.grid.major.x = element_blank(),
               panel.grid.major.y = element_line(colour = "lightgrey"),
-              plot.title = element_text(face = "bold")), 
+              plot.title = element_text(face = "bold"), 
+              legend.position = "none"), 
       tooltip = "text"
     ) |>
       layout(legend = list(
