@@ -216,7 +216,8 @@ ui <- fluidPage(
                style = "height: 70vh;", 
            h5(em("Changes in the sources of air pollutants in the UK:"), style = "margin-bottom: 20px; font-weight: bold;"),
            textOutput("commentary"), 
-           plotlyOutput("totals_graph") |>  withSpinner(color="#0dc5c1", type = 6)))
+           plotlyOutput("totals_graph"),
+           downloadButton("download")|>  withSpinner(color="#0dc5c1", type = 6)))
   ),
   
   
@@ -361,6 +362,13 @@ server <- function(input, output) {
     }
     
     
+    data_for_export  <<- filtered_data |> 
+      mutate(pollutant = input$pollutant) |> 
+      rename(units = Units) |> 
+      select(pollutant, source, year, emission, units, status)
+    
+    
+    
     
     filtered_data_with_colours <- filtered_data |>  
       left_join(line_colour_map, by = "source") |>
@@ -419,7 +427,12 @@ server <- function(input, output) {
       )) 
     })
     
-  
+  output$download <- downloadHandler(
+    filename = paste0(input$pollutant,"_data.csv"),
+    content = function(file) {
+      readr::write_csv(data_for_export, file)
+    }
+  )
   
   
   output$commentary <-  renderText({
@@ -429,29 +442,31 @@ server <- function(input, output) {
     # Main source in 1990
     top_1990 <- raw_data |>
       filter(pollutant == input$pollutant, year == "1990-01-01") |>
-      group_by(source_description) |>
+      group_by(source_description, Units) |>
       summarise(total_emission = sum(emission, na.rm = TRUE)) |>
-      slice_max(total_emission, n = 1)
+      arrange(desc(total_emission)) |> 
+      head(n = 1)
     
     # Main source in 2050
     top_2050 <- raw_data |>
       filter(pollutant == input$pollutant, year == "2050-01-01") |>
-      group_by(source_description) |>
+      group_by(source_description, Units) |>
       summarise(total_emission = sum(emission, na.rm = TRUE)) |>
-      slice_max(total_emission, n = 1)
+      arrange(desc(total_emission)) |> 
+      head(n = 1)
     
     
     if (top_2050$total_emission[1] != 0) {
       paste0(
         "For ", input$pollutant, ": in 1990 the largest source was ",
-        top_1990$source_description, " (", round(top_1990$total_emission, 1), " kt). ",
+        top_1990$source_description, " (", round(top_1990$total_emission, 1), " ", top_1990$Units, "). ",
         "By 2050 the main source is projected to be ",
-        top_2050$source_description, " (", round(top_2050$total_emission, 1), " kt)."
+        top_2050$source_description, " (", round(top_2050$total_emission, 1), " ", top_2050$Units," )."
       )
     } else {
       paste0(
         "For ", input$pollutant, ": in 1990 the largest source was ",
-        top_1990$source_description, " (", round(top_1990$total_emission, 1), " kt). ",
+        top_1990$source_description, " (", round(top_1990$total_emission, 1), " ", top_1990$Units," ). ",
         "The projections to 2050 are not available for this pollutant."
         
       )
