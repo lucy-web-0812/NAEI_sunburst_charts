@@ -87,16 +87,12 @@ The application expects a CSV file named `combined_historic_and_projected.csv` w
     -   Use the "Reset Chart View" button to return to overview
 3.  **Analyse Trends**:
     -   The trends graph updates based on your sunburst selections
-    -   Historical data shows actual emissions (green)
-    -   Future projections are shown in brown/orange
-4.  **View Detailed Data**:
-    -   Click "Data Table" to expand the detailed view
-    -   Use filters to find specific sources
-    -   Export data using the CSV/Excel buttons
+    -   Historical data shows actual emissions 
+    -   Future projections are shown in grey
 
 ## Data Sources
 
-The application uses data from the **National Atmospheric Emissions Inventory (NAEI)**: - **Website**: [https://naei.energysecurity.gov.uk](https://naei.energysecurity.gov.uk/data/data-selector?view=air-pollutants) - **Coverage**: UK emissions from 1990 with projections to 2050 - **Pollutants**: NOx, PM2.5, PM10, SO2, NH3, NMVOC, and others - **Classification**: Uses NFR (Nomenclature For Reporting) categories
+The application uses data from the **National Atmospheric Emissions Inventory (NAEI)**: - **Website**: [https://naei.energysecurity.gov.uk](https://naei.energysecurity.gov.uk/data/data-selector?view=air-pollutants) - **Coverage**: UK emissions from 1990 with projections to 2050 - **Pollutants**: NOx, PM2.5, PM10, SO2, NH3, NMVOC, and all those on the NAEI website - **Classification**: Uses NFR (Nomenclature For Reporting) categories
 
 ## Supported Pollutants
 
@@ -176,18 +172,3 @@ Add pollutant-specific information in the `get_commentary()` function:
 ```
 
 
-## Technical Details
-
--   **Framework**: Built with R Shiny
-
--   **Visualization**: Plotly for interactive charts, ggplot2 for static plots
-
--   **Styling**: Bootstrap 5 with custom CSS
-
--   **Data Processing**: dplyr for efficient data manipulation
-
--   **Responsive**: Mobile-friendly design using Bootstrap grid system
-
-
-
-**Made with ❤️ using R Shiny**
