@@ -147,11 +147,6 @@ your-app-directory/
     -   Check browser console for JavaScript errors
     -   Try refreshing the browser
 
-### Performance Tips
-
--   **Large Datasets**: The app handles data efficiently, but very large files may slow initial loading
--   **Browser Compatibility**: Works best in modern browsers (Chrome, Firefox, Safari, Edge)
--   **Memory**: Close other applications if experiencing slowdowns with large datasets
 
 ## Customisation
 

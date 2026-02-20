@@ -367,14 +367,14 @@ and historical trends across different pollutants.</p>
 <div id="interactive-sunburst-chart" class="section level3">
 <h3>🎯 Interactive Sunburst Chart</h3>
 <ul>
-<li><strong>Hierarchical Visualization</strong>: Explore emissions data
+<li><strong>Hierarchical Visualisation</strong>: Explore emissions data
 across three levels (sectors, sub-sectors, and specific sources)</li>
 <li><strong>Dynamic Filtering</strong>: Select different pollutants and
 years</li>
-<li><strong>Click-to-Drill</strong>: Click on chart sections to explore
-detailed trends</li>
-<li><strong>Units Display</strong>: Proper units shown throughout (kt,
-kt NO2 equivalent, etc.)</li>
+<li><strong>Click-to-Explore</strong>: Click on chart sections to
+explore detailed trends</li>
+<li><strong>Units Display</strong>: Appropriate units shown throughout
+(kt, kt NO2 equivalent, etc.)</li>
 </ul>
 </div>
 <div id="historical-trends-analysis" class="section level3">
@@ -393,11 +393,6 @@ commentary for each pollutant</li>
 </div>
 <div id="installation" class="section level2">
 <h2>Installation</h2>
-<div id="prerequisites" class="section level3">
-<h3>Prerequisites</h3>
-<p>Ensure you have R (version 4.0 or higher) installed on your
-system.</p>
-</div>
 <div id="required-r-packages" class="section level3">
 <h3>Required R Packages</h3>
 <p>Install the required packages by running this code in R:</p>
@@ -407,11 +402,7 @@ install.packages(c(
   &quot;plotly&quot;,          # Interactive plotting
   &quot;dplyr&quot;,           # Data manipulation
   &quot;ggplot2&quot;,         # Static plotting
-  &quot;DT&quot;               # Interactive data tables
-))
-
-# Optional packages for enhanced features
-install.packages(c(
+  &quot;DT&quot;,               # Interactive data tables
   &quot;shinycssloaders&quot;, # Loading animations
   &quot;bslib&quot;,           # Bootstrap themes
   &quot;thematic&quot;         # Plot theming
@@ -473,14 +464,8 @@ shiny::runApp(launch.browser = TRUE)</code></pre></li>
 <li><strong>Analyse Trends</strong>:
 <ul>
 <li>The trends graph updates based on your sunburst selections</li>
-<li>Historical data shows actual emissions (green)</li>
-<li>Future projections are shown in brown/orange</li>
-</ul></li>
-<li><strong>View Detailed Data</strong>:
-<ul>
-<li>Click “Data Table” to expand the detailed view</li>
-<li>Use filters to find specific sources</li>
-<li>Export data using the CSV/Excel buttons</li>
+<li>Historical data shows actual emissions</li>
+<li>Future projections are shown in grey</li>
 </ul></li>
 </ol>
 </div>
@@ -491,8 +476,8 @@ shiny::runApp(launch.browser = TRUE)</code></pre></li>
 Emissions Inventory (NAEI)</strong>: - <strong>Website</strong>: <a href="https://naei.energysecurity.gov.uk/data/data-selector?view=air-pollutants">https://naei.energysecurity.gov.uk</a>
 - <strong>Coverage</strong>: UK emissions from 1990 with projections to
 2050 - <strong>Pollutants</strong>: NOx, PM2.5, PM10, SO2, NH3, NMVOC,
-and others - <strong>Classification</strong>: Uses NFR (Nomenclature For
-Reporting) categories</p>
+and all those on the NAEI website - <strong>Classification</strong>:
+Uses NFR (Nomenclature For Reporting) categories</p>
 </div>
 <div id="supported-pollutants" class="section level2">
 <h2>Supported Pollutants</h2>
@@ -545,17 +530,6 @@ head(test_data)</code></pre></li>
 </ul></li>
 </ol>
 </div>
-<div id="performance-tips" class="section level3">
-<h3>Performance Tips</h3>
-<ul>
-<li><strong>Large Datasets</strong>: The app handles data efficiently,
-but very large files may slow initial loading</li>
-<li><strong>Browser Compatibility</strong>: Works best in modern
-browsers (Chrome, Firefox, Safari, Edge)</li>
-<li><strong>Memory</strong>: Close other applications if experiencing
-slowdowns with large datasets</li>
-</ul>
-</div>
 </div>
 <div id="customisation" class="section level2">
 <h2>Customisation</h2>
@@ -571,20 +545,6 @@ slowdowns with large datasets</li>
 <code>get_commentary()</code> function:</p>
 <pre class="r"><code>&quot;Your_Pollutant&quot; = &quot;Your custom commentary about this pollutant...&quot;</code></pre>
 </div>
-</div>
-<div id="technical-details" class="section level2">
-<h2>Technical Details</h2>
-<ul>
-<li><p><strong>Framework</strong>: Built with R Shiny</p></li>
-<li><p><strong>Visualization</strong>: Plotly for interactive charts,
-ggplot2 for static plots</p></li>
-<li><p><strong>Styling</strong>: Bootstrap 5 with custom CSS</p></li>
-<li><p><strong>Data Processing</strong>: dplyr for efficient data
-manipulation</p></li>
-<li><p><strong>Responsive</strong>: Mobile-friendly design using
-Bootstrap grid system</p></li>
-</ul>
-<p><strong>Made with ❤️ using R Shiny</strong></p>
 </div>
 </div>
 

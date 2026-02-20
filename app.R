@@ -175,11 +175,42 @@ sunburst_dataprocessing <- function(pollutant_species, selected_year){
 ui <- fluidPage(
   
   theme = bslib::bs_theme(bootswatch = "morph"),
+  
   tags$style(HTML("
-    body, .card, .well, .panel, .container-fluid {
-      background-color: white !important;
-    }
-  ")),
+  /* General app font */
+  body {
+    font-family: Consolas, 'Courier New', monospace !important;
+    font-size: 1.2em !important;
+  }
+
+  /* Verbatim outputs */
+  pre, 
+  .shiny-text-output, 
+  .shiny-verbatim-text-output {
+    font-family: Consolas, 'Courier New', monospace !important;
+  }
+
+  /* Plotly text (axes, hover, titles) */
+  .js-plotly-plot .plotly text {
+    font-family: Consolas, 'Courier New', monospace !important;
+  }
+
+  /* Plotly hover labels */
+  .js-plotly-plot .hovertext {
+    font-family: Consolas, 'Courier New', monospace !important;
+  }
+
+  /* D3 SVG text */
+  svg text {
+    font-family: Consolas, 'Courier New', monospace !important;
+  }
+
+  /* D3 HTML text elements */
+  .d3-tip, 
+  .axis text {
+    font-family: Consolas, 'Courier New', monospace !important;
+  }
+")),
   
   # Application title
   titlePanel("Sources of air pollutants"),
@@ -188,7 +219,7 @@ ui <- fluidPage(
     column(12,
            div(class = "card p-3 mb-4 shadow-sm",  # Bootstrap classes
                style = "height: 20vh;", 
-               h5(em("View emission proportions by pollutant and year:"), style = "margin-bottom: 5px; font-weight: bold;"),
+               h5("View emission proportions by pollutant and year:", style = "margin-bottom: 5px; font-weight: bold;"),
                fluidRow(
                  column(4,
                         selectInput("pollutant",
@@ -214,7 +245,7 @@ ui <- fluidPage(
     column(5, 
            div(class = "card p-3 mb-4 shadow-lg",
                style = "height: 70vh;", 
-           h5(em("Changes in the sources of air pollutants in the UK:"), style = "margin-bottom: 20px; font-weight: bold;"),
+           h5("Changes in the sources of air pollutants in the UK:", style = "margin-bottom: 20px; font-weight: bold;"),
            textOutput("commentary"), 
            plotlyOutput("totals_graph"),
            downloadButton("download")|>  withSpinner(color="#0dc5c1", type = 6)))
@@ -389,7 +420,7 @@ server <- function(input, output) {
             shape = status,
             linetype = status,
             text = paste0(
-              "Year: ", year,
+              "Year: ", substr(as.character(year),1,4),
               "<br>Emission: ", round(emission, 2), " ", Units,
               "<br>Status: ", status,
               "<br>Source: ", source
@@ -404,7 +435,7 @@ server <- function(input, output) {
             group = interaction(source, status),
             linetype = status,
             text = paste0(
-              "Year: ", year,
+              "Year: ", substr(as.character(year),1,4),
               "<br>Emission: ", round(emission, 2), " ", Units,
               "<br>Status: ", status,
               "<br>Source: ", source
