@@ -180,7 +180,7 @@ ui <- fluidPage(
   /* General app font */
   body {
     font-family: Consolas, 'Courier New', monospace !important;
-    font-size: 1.2em !important;
+    font-size: 1.1em !important;
   }
 
   /* Verbatim outputs */
@@ -188,27 +188,32 @@ ui <- fluidPage(
   .shiny-text-output, 
   .shiny-verbatim-text-output {
     font-family: Consolas, 'Courier New', monospace !important;
+     font-size: 1.1em !important;
   }
 
   /* Plotly text (axes, hover, titles) */
   .js-plotly-plot .plotly text {
     font-family: Consolas, 'Courier New', monospace !important;
+    font-size: 1.1em !important;
   }
 
   /* Plotly hover labels */
   .js-plotly-plot .hovertext {
     font-family: Consolas, 'Courier New', monospace !important;
+    font-size: 1.1em !important;
   }
 
   /* D3 SVG text */
   svg text {
     font-family: Consolas, 'Courier New', monospace !important;
+    font-size: 1.1em !important;
   }
 
   /* D3 HTML text elements */
   .d3-tip, 
   .axis text {
     font-family: Consolas, 'Courier New', monospace !important;
+    font-size: 1.1em !important;
   }
 ")),
   
@@ -217,18 +222,18 @@ ui <- fluidPage(
   
   fluidRow(
     column(12,
-           div(class = "card p-3 mb-4 shadow-sm",  # Bootstrap classes
+           div(class = "section",#"card p-3 mb-4 shadow-sm",  # Bootstrap classes
                style = "height: 20vh;", 
-               h5("View emission proportions by pollutant and year:", style = "margin-bottom: 5px; font-weight: bold;"),
+               h5("View emission proportions by pollutant and year:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.4em"),
                fluidRow(
                  column(4,
                         selectInput("pollutant",
-                                    "Pollutant:",
+                                   h5( "Pollutant:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
                                     selected = "PM10",
                                     choices = unique(raw_data$pollutant))),
                  column(4,
                         selectInput("year",
-                                    "Year:",
+                                    h5( "Year:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
                                     selected = "2022",
                                     choices = substr(unique(raw_data$year), 1, 4)))
                )
@@ -247,8 +252,9 @@ ui <- fluidPage(
                style = "height: 70vh;", 
            h5("Changes in the sources of air pollutants in the UK:", style = "margin-bottom: 20px; font-weight: bold;"),
            textOutput("commentary"), 
-           plotlyOutput("totals_graph"),
-           downloadButton("download")|>  withSpinner(color="#0dc5c1", type = 6)))
+           plotlyOutput("totals_graph", height = "60vh"),
+           downloadButton("download", label = "Download Plot Data")|>  
+             withSpinner(color="#0dc5c1", type = 6)))
   ),
   
   
@@ -289,6 +295,7 @@ server <- function(input, output) {
       parents = hierachial_data()$parent,
       values = hierachial_data()$emission,
       type = 'sunburst',
+      source = "sunburst",
       branchvalues = 'total',
       marker = list(colors =  hierachial_data()$colour,
                     line = list(color = "white", width = 1)),
@@ -302,8 +309,7 @@ server <- function(input, output) {
       textinfo = 'text',
     ) |> layout(
       paper_bgcolor = "rgba(0,0,0,0)",  # Fully transparent background
-      plot_bgcolor = "rgba(0,0,0,0)",  # Background of the plotting region is transparent too 
-      font = list(color = "black", size = 18, family = "Arial")  
+      plot_bgcolor = "rgba(0,0,0,0)"  # Background of the plotting region is transparent too )  
     )
     
     
@@ -321,7 +327,7 @@ server <- function(input, output) {
     
     # If the user clicks on the plot, records the info
     
-    click_event <- event_data("plotly_click")  # Capture click event
+    click_event <- event_data("plotly_click", source = "sunburst")  # Capture click event
     
     point_index <- click_event$pointNumber + 1
     
@@ -449,7 +455,9 @@ server <- function(input, output) {
         theme(panel.grid.major.x = element_blank(),
               panel.grid.major.y = element_line(colour = "lightgrey"),
               plot.title = element_text(face = "bold"), 
-              legend.position = "none"), 
+              legend.position = "none", 
+              panel.background = element_rect("white"), 
+              plot.background = element_rect("white")), 
       tooltip = "text"
     ) |>
       layout(legend = list(
