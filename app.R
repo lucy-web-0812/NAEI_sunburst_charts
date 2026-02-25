@@ -3,6 +3,7 @@ library(shiny)
 library(plotly)
 library(tidyverse)
 library(shinycssloaders)
+library(bslib)
 
 # Doing some changes that may appear in the git 
 
@@ -172,9 +173,15 @@ sunburst_dataprocessing <- function(pollutant_species, selected_year){
 }
 
 # ---- Define UI ---- 
-ui <- fluidPage(
+ui <- page_fluid(
   
-  theme = bslib::bs_theme(bootswatch = "morph"),
+  theme = bs_theme(
+    version = 5,
+    bg = "white",
+    fg = "#2b2b2b",
+    primary = "#9A7197",
+    base_font = "Consolas"
+  ),
   
   tags$style(HTML("
   /* General app font */
@@ -184,8 +191,8 @@ ui <- fluidPage(
   }
 
   /* Verbatim outputs */
-  pre, 
-  .shiny-text-output, 
+  pre,
+  .shiny-text-output,
   .shiny-verbatim-text-output {
     font-family: Consolas, 'Courier New', monospace !important;
      font-size: 1.1em !important;
@@ -210,7 +217,7 @@ ui <- fluidPage(
   }
 
   /* D3 HTML text elements */
-  .d3-tip, 
+  .d3-tip,
   .axis text {
     font-family: Consolas, 'Courier New', monospace !important;
     font-size: 1.1em !important;
@@ -234,7 +241,7 @@ ui <- fluidPage(
                  column(4,
                         selectInput("year",
                                     h5( "Year:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
-                                    selected = "2022",
+                                    selected = "2023",
                                     choices = substr(unique(raw_data$year), 1, 4)))
                )
            )
@@ -246,13 +253,14 @@ ui <- fluidPage(
   # Show a plot of the generated distribution
   
   fluidRow(
-    column(7, plotlyOutput("sunburstplot", height = "70vh") |>  withSpinner(color="#0dc5c1", type = 6)), 
+    column(7, div(class = "section", #card p-3 mb-4 shadow-sm", 
+                  plotlyOutput("sunburstplot", height = "70vh")) |>  withSpinner(color="#0dc5c1", type = 6)), 
     column(5, 
-           div(class = "card p-3 mb-4 shadow-lg",
+           div(class = "section", #card p-3 mb-4 shadow-lg",
                style = "height: 70vh;", 
            h5("Changes in the sources of air pollutants in the UK:", style = "margin-bottom: 20px; font-weight: bold;"),
            textOutput("commentary"), 
-           plotlyOutput("totals_graph", height = "60vh"),
+           plotlyOutput("totals_graph", height = "50vh"),
            downloadButton("download", label = "Download Plot Data")|>  
              withSpinner(color="#0dc5c1", type = 6)))
   ),
@@ -279,7 +287,14 @@ server <- function(input, output) {
   # Run the function on the selected data 
   
   hierachial_data <- reactive({
-    sunburst_dataprocessing(input$pollutant, paste0(input$year, "-01-01"))
+    sunburst_dataprocessing(input$pollutant, paste0(input$year, "-01-01")) |> 
+      mutate(
+        percentage = ifelse(
+          label == "Total",
+          100,
+          (emission / sum(emission[parent == "Total"], na.rm = TRUE)) * 100
+        )
+      )
   })
   
   
@@ -288,6 +303,7 @@ server <- function(input, output) {
   output$sunburstplot <- renderPlotly({
     
     colour_mapping <- hierachial_data()$colour
+    
     
     
     plot_ly(
@@ -303,7 +319,8 @@ server <- function(input, output) {
       text = paste0(
         hierachial_data()$label, "<br>",
         round(hierachial_data()$emission, 2), " ",
-        unique(raw_data$Units[raw_data$pollutant == input$pollutant])
+        unique(raw_data$Units[raw_data$pollutant == input$pollutant]), "<br>",
+        round(hierachial_data()$percentage, 2), "%" 
       ), 
       hoverinfo = 'text', 
       textinfo = 'text',
@@ -450,7 +467,7 @@ server <- function(input, output) {
         ) +
         scale_colour_identity() +
         scale_x_date(name = "Year", limits = c(as.Date("1990-01-01"), as.Date("2050-12-31"))) +
-        scale_y_continuous(name = paste0("Emissions (", unique(filtered_data$Units), ")")) +
+        scale_y_continuous(name = paste0("Emissions (", unique(filtered_data$Units), ")"), limits = c(0,NA)) +
         ggtitle(ggtitle(paste(unique(filtered_data$source), collapse = ", "))) +
         theme(panel.grid.major.x = element_blank(),
               panel.grid.major.y = element_line(colour = "lightgrey"),
