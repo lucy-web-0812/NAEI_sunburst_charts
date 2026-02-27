@@ -241,7 +241,7 @@ ui <- page_fluid(
                  column(4,
                         selectInput("year",
                                     h5( "Year:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
-                                    selected = "2023",
+                                    selected = "2024",
                                     choices = substr(unique(raw_data$year), 1, 4)))
                )
            )
@@ -260,10 +260,16 @@ ui <- page_fluid(
                style = "height: 70vh;", 
            h5("Changes in the sources of air pollutants in the UK:", style = "margin-bottom: 20px; font-weight: bold;"),
            textOutput("commentary"), 
-           plotlyOutput("totals_graph", height = "50vh"),
-           downloadButton("download", label = "Download Plot Data")|>  
-             withSpinner(color="#0dc5c1", type = 6)))
-  ),
+           withSpinner(
+             plotlyOutput("totals_graph", height = "50vh"),
+             color = "#0dc5c1",
+             type = 6
+           ),
+           div(
+             style = "text-align: right; margin-top: 10px;",
+             downloadButton("download", label = "Download Plot Data")
+           )
+  ))),
   
   
   tags$div(
