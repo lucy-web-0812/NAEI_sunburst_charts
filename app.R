@@ -173,7 +173,17 @@ sunburst_dataprocessing <- function(pollutant_species, selected_year){
 }
 
 # ---- Define UI ---- 
-ui <- page_fluid(
+ui <- tagList(
+    tags$head(
+      # Open Graph meta tags
+      tags$meta(property = "og:title", content = "Sources of Air Pollutants in the UK"),
+      tags$meta(property = "og:description", content = "Interactive visualization of historical and projected UK air pollutant emissions by source."),
+      tags$meta(property = "og:image", content = "shinyappimage.png"),
+      tags$meta(property = "og:type", content = "website"),
+    ),
+  
+  
+  page_fluid(
   
   theme = bs_theme(
     version = 5,
@@ -248,7 +258,7 @@ ui <- page_fluid(
     )
   ), 
   
-
+# 
   
   # Show a plot of the generated distribution
   
@@ -281,7 +291,7 @@ ui <- page_fluid(
            style = "color: #555; text-decoration: underline;"),
     " | Made by: Lucy Webster"
   )
-  
+  )
 )
 
 
