@@ -172,6 +172,16 @@ sunburst_dataprocessing <- function(pollutant_species, selected_year){
   
 }
 
+
+
+# Prepare the years... 
+
+years <- sort(unique(as.numeric(substr(raw_data$year, 1, 4))))
+
+historic_years  <- years[years <= 2024]
+projected_years <- years[years > 2024]
+
+
 # ---- Define UI ---- 
 ui <- tagList(
     tags$head(
@@ -252,7 +262,9 @@ ui <- tagList(
                         selectInput("year",
                                     h5( "Year:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
                                     selected = "2024",
-                                    choices = substr(unique(raw_data$year), 1, 4)))
+                                    choices = list("Historic Data:" = historic_years, 
+                                                   "Projected Data:" = projected_years), 
+                                    ))
                )
            )
     )
@@ -321,6 +333,10 @@ server <- function(input, output) {
     colour_mapping <- hierachial_data()$colour
     
     
+    validate(
+      need(sum(hierachial_data()$emission) != 0, paste0("Sorry, there are no projections available for ", input$pollutant))
+    )
+
     
     plot_ly(
       labels = hierachial_data()$label, 
@@ -349,7 +365,7 @@ server <- function(input, output) {
   })
   
   
-  # Also want to have graph and text that pops up depending upon what has been selected...... Idea would be to get like the wheredoesitallgo website....   
+  # Also want to have graph and text that pops up depending upon what has been selected...... 
   
   
   output$totals_graph <- renderPlotly({
