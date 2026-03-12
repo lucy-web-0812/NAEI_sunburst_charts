@@ -203,6 +203,11 @@ ui <- tagList(
     base_font = "Consolas"
   ),
   
+  div(
+    class = "d-flex justify-content-end",
+    bslib::input_dark_mode(id = "mode")
+  ),
+  
   tags$style(HTML("
   /* General app font */
   body {
@@ -281,7 +286,7 @@ ui <- tagList(
            div(class = "section", #card p-3 mb-4 shadow-lg",
                style = "height: 70vh;", 
            h5("Changes in the sources of air pollutants in the UK:", style = "margin-bottom: 20px; font-weight: bold;"),
-           textOutput("commentary"), 
+           uiOutput("commentary"), 
            withSpinner(
              plotlyOutput("totals_graph", height = "50vh"),
              color = "#0dc5c1",
@@ -295,12 +300,12 @@ ui <- tagList(
   
   
   tags$div(
-    style = "margin-top: 1px; padding-top: 1px; border-top: 1px solid #ccc; text-align: right; font-size: 16px; color: #555;",
-    "Source: ",
+    style = "margin-top: 1px; padding-top: 1px; border-top: 1px solid #ccc; text-align: right; font-size: 16px;",
+    "All data from: ",
     tags$a(href = "https://naei.energysecurity.gov.uk/data/data-selector?view=air-pollutants", 
            "National Atmospheric Emissions Inventory", 
            target = "_blank", 
-           style = "color: #555; text-decoration: underline;"),
+           style = "text-decoration: underline;"),
     " | Made by: Lucy Webster"
   )
   )
@@ -330,7 +335,7 @@ server <- function(input, output) {
   
   output$sunburstplot <- renderPlotly({
     
-    colour_mapping <- hierachial_data()$colour
+    colours <- hierachial_data()$colour
     
     
     validate(
@@ -345,7 +350,7 @@ server <- function(input, output) {
       type = 'sunburst',
       source = "sunburst",
       branchvalues = 'total',
-      marker = list(colors =  hierachial_data()$colour,
+      marker = list(colors =  colours,
                     line = list(color = "white", width = 1)),
       insidetextorientation = 'radial', 
       text = paste0(
@@ -357,6 +362,7 @@ server <- function(input, output) {
       hoverinfo = 'text', 
       textinfo = 'text',
     ) |> layout(
+      font = list(color = if (input$mode == "dark") "white" else "black"),
       paper_bgcolor = "rgba(0,0,0,0)",  # Fully transparent background
       plot_bgcolor = "rgba(0,0,0,0)"  # Background of the plotting region is transparent too )  
     )
@@ -461,7 +467,8 @@ server <- function(input, output) {
       mutate(
         plot_colour = ifelse(status == "Historic", historic_colour, "darkgrey")
       ) |> 
-      mutate(plot_colour = ifelse(source == "Total" & status == "Historic", "#394F49", plot_colour))
+      mutate(plot_colour = ifelse(source == "Total" & status == "Historic" & input$mode == "light", "#394F49", plot_colour))  |> 
+      mutate(plot_colour = ifelse(source == "Total" & status == "Historic" & input$mode == "dark", "#FFFFFF", plot_colour))
     
     
     ggplotly(
@@ -512,7 +519,9 @@ server <- function(input, output) {
       layout(legend = list(
         x = 0.75,
         y = 0.85
-      )) 
+      ), 
+      paper_bgcolor = "rgba(0,0,0,0)",  # Fully transparent background
+      plot_bgcolor = "rgba(0,0,0,0)")  # Background of the plotting region is transparent too ) ) 
     })
     
   output$download <- downloadHandler(
@@ -523,7 +532,7 @@ server <- function(input, output) {
   )
   
   
-  output$commentary <-  renderText({
+  output$commentary <-  renderUI({
     
     req(input$pollutant) 
     
@@ -549,15 +558,15 @@ server <- function(input, output) {
         "For ", input$pollutant, ": in 1990 the largest source was ",
         top_1990$source_description, " (", round(top_1990$total_emission, 1), " ", top_1990$Units, "). ",
         "By 2050 the main source is projected to be ",
-        top_2050$source_description, " (", round(top_2050$total_emission, 1), " ", top_2050$Units," )."
+        top_2050$source_description, " (", round(top_2050$total_emission, 1), " ", top_2050$Units,")."
       )
     } else {
-      paste0(
+      HTML(paste0(
         "For ", input$pollutant, ": in 1990 the largest source was ",
-        top_1990$source_description, " (", round(top_1990$total_emission, 1), " ", top_1990$Units," ). ",
-        "The projections to 2050 are not available for this pollutant."
+        top_1990$source_description, " (", round(top_1990$total_emission, 1), " ", top_1990$Units,"). ",
+       "<b>The projections to 2050 are not available for this pollutant.</b>"
         
-      )
+      ))
     }
     
     
