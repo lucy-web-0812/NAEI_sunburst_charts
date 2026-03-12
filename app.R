@@ -184,133 +184,110 @@ projected_years <- years[years > 2024]
 
 # ---- Define UI ---- 
 ui <- tagList(
-    tags$head(
-      # Open Graph meta tags
-      tags$meta(property = "og:title", content = "Sources of Air Pollutants in the UK"),
-      tags$meta(property = "og:description", content = "Interactive visualization of historical and projected UK air pollutant emissions by source."),
-      tags$meta(property = "og:image", content = "shinyappimage.png"),
-      tags$meta(property = "og:type", content = "website"),
-    ),
   
+  # Meta tags for if sharing link
+  tags$head(
+    tags$meta(property = "og:title", content = "Sources of Air Pollutants in the UK"),
+    tags$meta(property = "og:description", content = "Interactive visualisation of historical and projected UK air pollutant emissions by source."),
+    tags$meta(property = "og:image", content = "shinyappimage.png"),
+    tags$meta(property = "og:type", content = "website"),
+    
+    # CSS for fonts and responsive tweaks
+    tags$style(HTML("
+      body, pre, .shiny-text-output, .shiny-verbatim-text-output,
+      .js-plotly-plot .plotly text, .js-plotly-plot .hovertext,
+      svg text, .d3-tip, .axis text {
+        font-family: Consolas, 'Courier New', monospace !important;
+        font-size: 1.1em !important;
+      }
+      @media (max-width: 768px) {
+        body { font-size: 1em !important; }
+        h5 { font-size: 1.2em !important; }
+      }
+    "))
+  ),
   
+  # Fluid page with bslib theme
   page_fluid(
-  
-  theme = bs_theme(
-    version = 5,
-    bg = "white",
-    fg = "#2b2b2b",
-    primary = "#9A7197",
-    base_font = "Consolas"
-  ),
-  
-  div(
-    class = "d-flex justify-content-end",
-    bslib::input_dark_mode(id = "mode")
-  ),
-  
-  tags$style(HTML("
-  /* General app font */
-  body {
-    font-family: Consolas, 'Courier New', monospace !important;
-    font-size: 1.1em !important;
-  }
-
-  /* Verbatim outputs */
-  pre,
-  .shiny-text-output,
-  .shiny-verbatim-text-output {
-    font-family: Consolas, 'Courier New', monospace !important;
-     font-size: 1.1em !important;
-  }
-
-  /* Plotly text (axes, hover, titles) */
-  .js-plotly-plot .plotly text {
-    font-family: Consolas, 'Courier New', monospace !important;
-    font-size: 1.1em !important;
-  }
-
-  /* Plotly hover labels */
-  .js-plotly-plot .hovertext {
-    font-family: Consolas, 'Courier New', monospace !important;
-    font-size: 1.1em !important;
-  }
-
-  /* D3 SVG text */
-  svg text {
-    font-family: Consolas, 'Courier New', monospace !important;
-    font-size: 1.1em !important;
-  }
-
-  /* D3 HTML text elements */
-  .d3-tip,
-  .axis text {
-    font-family: Consolas, 'Courier New', monospace !important;
-    font-size: 1.1em !important;
-  }
-")),
-  
-  # Application title
-  titlePanel("Sources of air pollutants"),
-  
-  fluidRow(
-    column(12,
-           div(class = "section",#"card p-3 mb-4 shadow-sm",  # Bootstrap classes
-               style = "height: 20vh;", 
-               h5("View emission proportions by pollutant and year:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.4em"),
-               fluidRow(
-                 column(4,
-                        selectInput("pollutant",
-                                   h5( "Pollutant:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
-                                    selected = "PM10",
-                                    choices = unique(raw_data$pollutant))),
-                 column(4,
-                        selectInput("year",
-                                    h5( "Year:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
-                                    selected = "2024",
-                                    choices = list("Historic Data:" = historic_years, 
-                                                   "Projected Data:" = projected_years), 
-                                    ))
-               )
-           )
+    theme = bs_theme(
+      version = 5,
+      bg = "white",
+      fg = "#2b2b2b",
+      primary = "#9A7197",
+      base_font = "Consolas"
+    ),
+    
+    # Dark mode toggle at top-right
+    div(class = "d-flex justify-content-end mb-2", 
+        style = "padding:10px;", 
+        bslib::input_dark_mode(id = "mode")
+    ),
+    
+    # App title
+    titlePanel("Sources of air pollutants"),
+    
+    # Inputs section
+    fluidRow(
+      div(class = "col-12",
+          div(class = "section",
+              style = "padding:10px; margin-bottom:10px;",
+              h5("View emission proportions by pollutant and year:", style = "margin-bottom: 10px; font-weight: bold; font-size: 1.4em"),
+              
+              fluidRow(
+                div(class = "col-12 col-md-4",
+                    selectInput("pollutant",
+                                h5("Pollutant:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
+                                selected = "PM10",
+                                choices = unique(raw_data$pollutant),
+                                width = "100%")
+                ),
+                div(class = "col-12 col-md-4",
+                    selectInput("year",
+                                h5("Year:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
+                                selected = "2024",
+                                choices = list(
+                                  "Historic Data:" = historic_years,
+                                  "Projected Data:" = projected_years
+                                ),
+                                width = "100%")
+                )
+              )
+          )
+      )
+    ),
+    
+    # Plots section
+    fluidRow(
+      div(class = "col-12 col-lg-7",
+          div(class = "section",
+              withSpinner(plotlyOutput("sunburstplot", width = "100%", height = "60vh"), color="#0dc5c1", type = 6)
+          )
+      ),
+      div(class = "col-12 col-lg-5",
+          div(class = "section",
+              style = "padding:10px;",
+              h5("Changes in the sources of air pollutants in the UK:", style = "margin-bottom: 20px; font-weight: bold;"),
+              uiOutput("commentary"),
+              withSpinner(plotlyOutput("totals_graph", width = "100%", height = "50vh"), color = "#0dc5c1", type = 6),
+              div(style = "text-align: right; margin-top: 10px;",
+                  downloadButton("download", label = "Download Plot Data")
+              )
+          )
+      )
+    ),
+    
+    # Footer
+    tags$div(
+      style = "margin-top: 1px; padding-top: 1px; border-top: 1px solid #ccc; text-align: right; font-size: 16px;",
+      "All data from: ",
+      tags$a(href = "https://naei.energysecurity.gov.uk/data/data-selector?view=air-pollutants", 
+             "National Atmospheric Emissions Inventory", 
+             target = "_blank", 
+             style = "text-decoration: underline;"),
+      " | Made by: Lucy Webster"
     )
-  ), 
-  
-# 
-  
-  # Show a plot of the generated distribution
-  
-  fluidRow(
-    column(7, div(class = "section", #card p-3 mb-4 shadow-sm", 
-                  plotlyOutput("sunburstplot", height = "70vh")) |>  withSpinner(color="#0dc5c1", type = 6)), 
-    column(5, 
-           div(class = "section", #card p-3 mb-4 shadow-lg",
-               style = "height: 70vh;", 
-           h5("Changes in the sources of air pollutants in the UK:", style = "margin-bottom: 20px; font-weight: bold;"),
-           uiOutput("commentary"), 
-           withSpinner(
-             plotlyOutput("totals_graph", height = "50vh"),
-             color = "#0dc5c1",
-             type = 6
-           ),
-           div(
-             style = "text-align: right; margin-top: 10px;",
-             downloadButton("download", label = "Download Plot Data")
-           )
-  ))),
-  
-  
-  tags$div(
-    style = "margin-top: 1px; padding-top: 1px; border-top: 1px solid #ccc; text-align: right; font-size: 16px;",
-    "All data from: ",
-    tags$a(href = "https://naei.energysecurity.gov.uk/data/data-selector?view=air-pollutants", 
-           "National Atmospheric Emissions Inventory", 
-           target = "_blank", 
-           style = "text-decoration: underline;"),
-    " | Made by: Lucy Webster"
-  )
   )
 )
-
 
 # ----- And the server function ------
 server <- function(input, output) {
