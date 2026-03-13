@@ -189,7 +189,7 @@ ui <- tagList(
   tags$head(
     tags$meta(property = "og:title", content = "Sources of Air Pollutants in the UK"),
     tags$meta(property = "og:description", content = "Interactive visualisation of historical and projected UK air pollutant emissions by source."),
-    tags$meta(property = "og:image", content = "shinyappimage.png"),
+    tags$meta(property = "og:image", content = "https://github.com/lucy-web-0812/NAEI_sunburst_charts/blob/main/shinyappimage.png"),
     tags$meta(property = "og:type", content = "website"),
     
     # CSS for fonts and responsive tweaks
@@ -381,7 +381,8 @@ server <- function(input, output) {
         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE), 
         plot_bgcolor = "rgba(0,0,0,0)",   # Transparent plot area
-        paper_bgcolor = "rgba(0,0,0,0)"   # Transparent outer area
+        paper_bgcolor = "rgba(0,0,0,0)",   # Transparent outer area
+        font = list(color = if (input$mode == "dark") "white" else "black")
       )
     )
       
@@ -429,7 +430,9 @@ server <- function(input, output) {
         summarise(emission = sum(emission, na.rm = T)) |> 
         rename(source = NFR_wide.y) |> 
         filter(source == selected_label)
-    }
+    } 
+      
+    
     
     
     data_for_export  <<- filtered_data |> 
