@@ -203,6 +203,7 @@ ui <- tagList(
       @media (max-width: 768px) {
         body { font-size: 1em !important; }
         h5 { font-size: 1.2em !important; }
+        
       }
     "))
   ),
@@ -498,7 +499,8 @@ server <- function(input, output) {
         y = 0.85
       ), 
       paper_bgcolor = "rgba(0,0,0,0)",  # Fully transparent background
-      plot_bgcolor = "rgba(0,0,0,0)")  # Background of the plotting region is transparent too ) ) 
+      plot_bgcolor = "rgba(0,0,0,0)" , # Background of the plotting region is transparent too ) ) 
+      margin = list(t = 80) )
     })
     
   output$download <- downloadHandler(
