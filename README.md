@@ -1,8 +1,8 @@
 # UK Air Pollutants Dashboard
 
-An interactive Shiny web application for exploring UK air pollutant emissions data from the National Atmospheric Emissions Inventory (NAEI). This dashboard provides comprehensive visualization of emission sources and historical trends across different pollutants.
+An interactive Shiny web application for exploring UK air pollutant emissions data from the National Atmospheric Emissions Inventory (NAEI). 
 
-![Dashboard Here](https://shiny.york.ac.uk/NAEI_visualiser/)
+[Dashboard Here](https://shiny.york.ac.uk/NAEI_visualiser/)
 
 ## Features
 
@@ -11,14 +11,14 @@ An interactive Shiny web application for exploring UK air pollutant emissions da
 -   **Hierarchical Visualisation**: Explore emissions data across three levels (sectors, sub-sectors, and specific sources)
 -   **Dynamic Filtering**: Select different pollutants and years
 -   **Click-to-Explore**: Click on chart sections to explore detailed trends
--   **Units Display**: Appropriate units shown throughout (kt, kt NO2 equivalent, etc.)
+-   **Units Display**: Appropriate units shown throughout (kt, t, etc.)
 
 ### 📈 Historical Trends Analysis
 
 -   **Time Series Plots**: View emissions from 1990 to projected 2050
 -   **Historical vs Projected**: Distinguish between actual and projected data
 -   **Source-Specific Trends**: Click sunburst sections to see individual source trends
--   **Contextual Information**: Detailed background commentary for each pollutant
+-   **Contextual Information**: Background commentary for each pollutant (only basic at the moment but I hope to improve this!)
 
 
 ## Data Sources
