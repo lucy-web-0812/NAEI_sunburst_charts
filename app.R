@@ -285,9 +285,14 @@ ui <- tagList(
              "National Atmospheric Emissions Inventory", 
              target = "_blank", 
              style = "text-decoration: underline;"),
-      " | Made by: Lucy Webster"
+      " | Made by: Lucy Webster | ", 
+      tags$a(
+        href = "https://github.com/lucy-web-0812/NAEI_sunburst_charts",
+        target = "_blank",
+        "View code on GitHub"
     )
   )
+)
 )
 
 # ----- And the server function ------
