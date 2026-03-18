@@ -2,7 +2,7 @@
 
 An interactive Shiny web application for exploring UK air pollutant emissions data from the National Atmospheric Emissions Inventory (NAEI). This dashboard provides comprehensive visualization of emission sources and historical trends across different pollutants.
 
-![Dashboard Here](https://shiny.york.ac.uk/NAEI_visualiser/)
+[Dashboard Here](https://shiny.york.ac.uk/NAEI_visualiser/)
 
 ## Features
 
