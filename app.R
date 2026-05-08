@@ -11,24 +11,24 @@ library(bslib)
 
 pollutants_and_units <- read_csv("list_of_pollutants.csv") |> 
   mutate(Pollutant = gsub("[\r]", "", Pollutant), 
-         Pollutant = ifelse(Pollutant == "Total 1-4", "Total PAHs", Pollutant))
+         Pollutant = ifelse(Pollutant == "Total 1-4", "Total PAHs", Pollutant)) 
 
 # Pre-processing 
 
-raw_data <- read.csv("combined_historic_and_projected.csv") |> 
+raw_data <- read.csv("combined_historic_and_projected.csv") |>  # Note that need read.csv to get the right pollutant format for the join! Don't know why! 
   mutate(NFR_wide.y = ifelse(NFR_wide.y == "Fuel Combustion Activities", NFR_mid, NFR_wide.y)) |> 
-  left_join(pollutants_and_units,join_by(pollutant == Pollutant))
+  left_join(pollutants_and_units, join_by(pollutant == Pollutant)) |> 
+  select(-c(`X`, `...1`))
+
+
+
+ghg_data <- read_csv("ghg_data.csv") |> 
+  select(-`...1`) |> 
+  filter(CRT_Code != "non-IPCC")
 
 
 
 # Make all the colours consistent across the sectors, even when pollutant selected changes 
-
-colour_data <-  raw_data |> 
-  select(c(NFR_wide.y, source_description)) |> 
-  distinct()
-
-
-
 
 # For the purposes of visualisation, I think we need to break up the Fuel Combustion Activities section... 
 
