@@ -15,16 +15,26 @@ pollutants_and_units <- read_csv("list_of_pollutants.csv") |>
 
 # Pre-processing 
 
-raw_data <- read.csv("combined_historic_and_projected.csv") |>  # Note that need read.csv to get the right pollutant format for the join! Don't know why! 
+air_pollutant_data <- read.csv("combined_historic_and_projected.csv") |>  # Note that need read.csv to get the right pollutant format for the join! Don't know why! 
   mutate(NFR_wide.y = ifelse(NFR_wide.y == "Fuel Combustion Activities", NFR_mid, NFR_wide.y)) |> 
+  mutate(NFR_wide.y = ifelse(NFR_wide.y %in% c("Volcanoes", "Forest fires", "Other natural emissions (please specify in the IIR)"), "Other", NFR_wide.y)) |> 
+  mutate(NFR_wide.y = ifelse(str_detect(NFR_wide.y, "Other"), "Other", NFR_wide.y)) |> 
+  mutate(NFR_wide.y = ifelse(str_detect(NFR_wide.y, "Other") & Code_2 == "1A", "Combustion: Other", NFR_wide.y)) |> 
   left_join(pollutants_and_units, join_by(pollutant == Pollutant)) |> 
-  select(-c(`X`, `...1`))
+  select(-c(`X`, `...1`)) |> 
+  rename(wide_col = NFR_wide.y, mid_col = NFR_mid)
 
 
 
 ghg_data <- read_csv("ghg_data.csv") |> 
   select(-`...1`) |> 
-  filter(CRT_Code != "non-IPCC")
+  filter(CRT_Code != "non-IPCC") |> 
+  filter(is.na(CRT_wide) == F ) |> 
+  mutate(CRT_wide = ifelse(CRT_mid == "Fuel Combustion Activities", CRT_mid, CRT_wide))  |> 
+  rename(wide_col = CRT_wide, mid_col = CRT_mid, pollutant = greenhouse_gas) |> 
+  mutate(year = as.character(paste0(year, "-01-01")))
+
+
 
 
 
@@ -33,11 +43,11 @@ ghg_data <- read_csv("ghg_data.csv") |>
 # For the purposes of visualisation, I think we need to break up the Fuel Combustion Activities section... 
 
 
-num_colours <- length(unique(raw_data$NFR_wide.y))
-base_colours <- c("#B39DDB","#1F618D","#E573A0","#006400" , "#F4D03F", "#FF7F50",  "#76D7C4", "#C0392B",  "#5DADE2", "yellow", "green", "blue", "orange") # RColorBrewer::brewer.pal(9, "Set1")
+num_colours <- length(unique(air_pollutant_data$wide_col))
+base_colours <- c("#B39DDB","#1F618D","#E573A0","#006400" , "#F4D03F", "#FF7F50", "#C0392B", "#76D7C4",  "#5DADE2", "yellow", "green", "blue", "orange") # RColorBrewer::brewer.pal(9, "Set1")
 
 
-colour_key <- data.frame(grandparent_colour = base_colours[1:num_colours], NFR_wide.y = unique(raw_data$NFR_wide.y))
+colour_key <- data.frame(grandparent_colour = base_colours[1:num_colours], wide_col = unique(air_pollutant_data$wide_col))
 
 
 
@@ -52,8 +62,8 @@ lighten_colour <- function(colour, factor) {
 
 # Joining the colour data to the raw data set, adding the parent and child colours 
 
-colour_data <- raw_data |> 
-  left_join(colour_key, by = join_by(NFR_wide.y)) |> 
+colour_data <- air_pollutant_data |> 
+  left_join(colour_key, by = join_by(wide_col)) |> 
   mutate(
     parent_colour = sapply(grandparent_colour, lighten_colour, factor = 0.1),  
     child_colour = sapply(parent_colour, lighten_colour, factor = 0.2)  
@@ -63,9 +73,9 @@ colour_data <- raw_data |>
 # and mapping colours for the line chart data
 
 line_colour_map <- colour_data |>
-  select(source, NFR_wide.y, source_description, child_colour) |>
+  select(source, wide_col, source_description, child_colour) |>
   distinct() |>
-  pivot_longer(cols = c(source, source_description, NFR_wide.y), names_to = "heirachy", values_to = "source") |> 
+  pivot_longer(cols = c(source, source_description, wide_col), names_to = "heirachy", values_to = "source") |> 
   select(source, child_colour) |> 
   rename(historic_colour = child_colour)
 
@@ -75,15 +85,15 @@ line_colour_map <- colour_data |>
 # Getting a list of each hierachial level and their colours 
 
 grandparent_colours <- colour_data |> 
-  select(NFR_wide.y, grandparent_colour) |> 
+  select(wide_col, grandparent_colour) |> 
   distinct() |> 
-  rename(label = NFR_wide.y, colour = grandparent_colour) |> 
+  rename(label = wide_col, colour = grandparent_colour) |> 
   mutate(level = "grandparent")
 
 parent_colours <- colour_data |> 
-  select(NFR_mid, parent_colour) |> 
+  select(mid_col, parent_colour) |> 
   distinct() |> 
-  rename(label = NFR_mid, colour = parent_colour) |> 
+  rename(label = mid_col, colour = parent_colour) |> 
   mutate(level = "parent")
 
 child_colours <- colour_data |> 
@@ -103,14 +113,13 @@ colour_mapping <- rbind(grandparent_colours,
 # Function needed to get the data in a format to use the sunburst chart
 
 
-sunburst_dataprocessing <- function(pollutant_species, selected_year){
+sunburst_dataprocessing <- function(raw_data_to_process, pollutant_species, selected_year){
   
-  df <- read.csv("combined_historic_and_projected.csv") |> 
-    mutate(NFR_wide.y = ifelse(NFR_wide.y == "Fuel Combustion Activities", NFR_mid, NFR_wide.y)) |> 
+  df <- raw_data_to_process |> 
     filter(pollutant == pollutant_species) |> 
     filter(year == selected_year) |> 
-    select(c(source_description, NFR_mid, NFR_wide.y, emission)) |> 
-    rename(NFR_wide = NFR_wide.y) 
+    select(c(source_description, mid_col, wide_col, emission)) |> 
+    filter(emission > 0)
   
   
   # Preparing the data for the chart.... 
@@ -126,24 +135,24 @@ sunburst_dataprocessing <- function(pollutant_species, selected_year){
   # And all the totals for the NFR_wide
   
   
-  df_NFR_wide <- df |> 
-    group_by(NFR_wide) |> 
+  df_wide <- df |> 
+    group_by(wide_col) |> 
     summarise(emission = sum(emission, na.rm = T)) |> 
     mutate(parent = "Total") |> 
-    rename(label = NFR_wide) |> 
+    rename(label = wide_col) |> 
     left_join(filter(colour_mapping, level == "grandparent"), by = join_by(label))
   
   
   # And all the totals for the NFR_mid
   
-  df_NFR_mid <- df |> 
-    group_by(NFR_mid) |> 
+  df_mid <- df |> 
+    group_by(mid_col) |> 
     summarise(emission = sum(emission, na.rm = T)) |> 
-    left_join(df, join_by(NFR_mid == NFR_mid)) |> 
-    rename(parent = NFR_wide) |> 
+    left_join(df, join_by(mid_col == mid_col)) |> 
+    rename(parent = wide_col) |> 
     #mutate(parent = "Total") |> 
-    select(NFR_mid, parent, emission.x) |> 
-    rename(label = NFR_mid, emission = emission.x) |> 
+    select(mid_col, parent, emission.x) |> 
+    rename(label = mid_col, emission = emission.x) |> 
     filter((label == parent) == F) |> 
     distinct() |> 
     left_join(filter(colour_mapping, level == "parent"), by = join_by(label))
@@ -152,8 +161,8 @@ sunburst_dataprocessing <- function(pollutant_species, selected_year){
   
   df_source <- df |> 
     filter(is.na(emission) == F) |> 
-    select(c(source_description, NFR_mid, emission)) |> 
-    rename(label = source_description, parent = NFR_mid) |> 
+    select(c(source_description, mid_col, emission)) |> 
+    rename(label = source_description, parent = mid_col) |> 
     filter((label == parent) == F) |> 
     distinct() |> 
     left_join(filter(colour_mapping, level == "child"), by = join_by(label))
@@ -161,14 +170,14 @@ sunburst_dataprocessing <- function(pollutant_species, selected_year){
   # bind the rows and make available outside the link
   
   
-  hierachial_data <<- bind_rows(
+  hierachial_data <- bind_rows(
     df_total, 
-    df_NFR_wide, 
-    df_NFR_mid, 
+    df_wide, 
+    df_mid, 
     df_source
   ) 
   
-  
+  return(hierachial_data)
   
 }
 
@@ -176,7 +185,7 @@ sunburst_dataprocessing <- function(pollutant_species, selected_year){
 
 # Prepare the years... 
 
-years <- sort(unique(as.numeric(substr(raw_data$year, 1, 4))))
+years <- sort(unique(as.numeric(substr(air_pollutant_data$year, 1, 4))))
 
 historic_years  <- years[years <= 2024]
 projected_years <- years[years > 2024]
@@ -227,55 +236,131 @@ ui <- tagList(
     # App title
     titlePanel("Sources of air pollutants"),
     
-    # Inputs section
-    fluidRow(
-      div(class = "col-12",
-          div(class = "section",
-              style = "padding:10px; margin-bottom:10px;",
-              h5("View emission proportions by pollutant and year:", style = "margin-bottom: 10px; font-weight: bold; font-size: 1.4em"),
-              
-              fluidRow(
-                div(class = "col-12 col-md-4",
-                    selectInput("pollutant",
-                                h5("Pollutant:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
-                                selected = "PM10",
-                                choices = unique(raw_data$pollutant),
-                                width = "100%")
+    navset_tab(
+      
+      
+      nav_panel("Air Pollutants", 
+                # Inputs section
+                fluidRow(
+                  div(class = "col-12",
+                      div(class = "section",
+                          style = "padding:10px; margin-bottom:10px;",
+                          h5("View emission proportions by pollutant and year:", style = "margin-bottom: 10px; font-weight: bold; font-size: 1.4em"),
+                          
+                          fluidRow(
+                            div(class = "col-12 col-md-4",
+                                selectInput("pollutant",
+                                            h5("Pollutant:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
+                                            selected = "PM10",
+                                            choices = unique(air_pollutant_data$pollutant),
+                                            width = "100%")
+                            ),
+                            div(class = "col-12 col-md-4",
+                                selectInput("year",
+                                            h5("Year:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
+                                            selected = "2024",
+                                            choices = list(
+                                              "Historic Data:" = historic_years,
+                                              "Projected Data:" = projected_years
+                                            ),
+                                            width = "100%")
+                            )
+                          )
+                      )
+                  )
                 ),
-                div(class = "col-12 col-md-4",
-                    selectInput("year",
-                                h5("Year:", style = "margin-bottom: 5px; font-weight: bold; font-size: 1.2em"),
-                                selected = "2024",
-                                choices = list(
-                                  "Historic Data:" = historic_years,
-                                  "Projected Data:" = projected_years
-                                ),
-                                width = "100%")
+                
+                # Plots section
+                fluidRow(
+                  div(class = "col-12 col-lg-7",
+                      div(class = "section",
+                          withSpinner(plotlyOutput("sunburstplot", width = "100%", height = "60vh"), color="#0dc5c1", type = 6)
+                      )
+                  ),
+                  div(class = "col-12 col-lg-5",
+                      div(class = "section",
+                          style = "padding:10px;",
+                          h5("Changes in the sources of air pollutants in the UK:", style = "margin-bottom: 20px; font-weight: bold;"),
+                          uiOutput("commentary"),
+                          withSpinner(plotlyOutput("totals_graph", width = "100%", height = "50vh"), color = "#0dc5c1", type = 6),
+                          div(style = "text-align: right; margin-top: 10px;",
+                              downloadButton("download", label = "Download Plot Data")
+                          )
+                      )
+                  )
                 )
+                
+               
+        
+      ), 
+      
+      
+      nav_panel(
+        "Greenhouse Gases",
+        
+        fluidRow(
+          
+          div(
+            class = "col-12 col-md-4",
+            selectInput(
+              "ghg",
+              "Greenhouse Gas:",
+              choices = unique(ghg_data$pollutant),
+              selected = "Carbon Dioxide as Carbon"
+            )
+          ),
+          
+          div(
+            class = "col-12 col-md-4",
+            selectInput(
+              "ghg_year",
+              "Year:",
+              selected = "2023",
+              choices = list(
+                "Historic Data:" = historic_years,
+                "Projected Data:" = projected_years
               )
+            )
           )
-      )
-    ),
-    
-    # Plots section
-    fluidRow(
-      div(class = "col-12 col-lg-7",
-          div(class = "section",
-              withSpinner(plotlyOutput("sunburstplot", width = "100%", height = "60vh"), color="#0dc5c1", type = 6)
-          )
-      ),
-      div(class = "col-12 col-lg-5",
-          div(class = "section",
+        ),
+        
+        fluidRow(
+          
+          div(
+            class = "col-12 col-lg-7",
+            div(
+              class = "section",
+              withSpinner(
+                plotlyOutput("ghg_sunburst", height = "60vh"),
+                color = "#0dc5c1",
+                type = 6
+              )
+            )
+          ),
+          
+          div(
+            class = "col-12 col-lg-5",
+            div(
+              class = "section",
               style = "padding:10px;",
-              h5("Changes in the sources of air pollutants in the UK:", style = "margin-bottom: 20px; font-weight: bold;"),
-              uiOutput("commentary"),
-              withSpinner(plotlyOutput("totals_graph", width = "100%", height = "50vh"), color = "#0dc5c1", type = 6),
-              div(style = "text-align: right; margin-top: 10px;",
-                  downloadButton("download", label = "Download Plot Data")
+              
+              h5(
+                "Changes in greenhouse gas emissions:",
+                style = "margin-bottom: 20px; font-weight: bold;"
+              ),
+              
+              withSpinner(
+                plotlyOutput("ghg_totals_graph", height = "50vh"),
+                color = "#0dc5c1",
+                type = 6
               )
+            )
           )
+        )
       )
-    ),
+    ), 
+    
+    
     
     # Footer
     tags$div(
@@ -290,10 +375,15 @@ ui <- tagList(
         href = "https://github.com/lucy-web-0812/NAEI_sunburst_charts",
         target = "_blank",
         "View code on GitHub"
+      )
     )
-  )
+      
+      
+    )
+    
+
 )
-)
+
 
 # ----- And the server function ------
 server <- function(input, output) {
@@ -303,7 +393,7 @@ server <- function(input, output) {
   # Run the function on the selected data 
   
   hierachial_data <- reactive({
-    sunburst_dataprocessing(input$pollutant, paste0(input$year, "-01-01")) |> 
+    sunburst_dataprocessing(air_pollutant_data, input$pollutant, paste0(input$year, "-01-01")) |> 
       mutate(
         percentage = ifelse(
           label == "Total",
@@ -312,6 +402,26 @@ server <- function(input, output) {
         )
       )
   })
+  
+  
+  hierachial_data_ghg <- reactive({
+    sunburst_dataprocessing(ghg_data, input$ghg, paste0(input$ghg_year, "-01-01")) |> 
+      mutate(
+        percentage = ifelse(
+          label == "Total",
+          100,
+          (emission / sum(emission[parent == "Total"], na.rm = TRUE)) * 100
+        )
+      )
+  })
+  
+  
+  
+  
+
+# AIR POLLUTANTS ----------------------------------------------------------
+
+  
   
   
   # And the plot output 
@@ -339,7 +449,7 @@ server <- function(input, output) {
       text = paste0(
         hierachial_data()$label, "<br>",
         round(hierachial_data()$emission, 2), " ",
-        unique(raw_data$Units[raw_data$pollutant == input$pollutant]), "<br>",
+        unique(air_pollutant_data$Units[air_pollutant_data$pollutant == input$pollutant]), "<br>",
         round(hierachial_data()$percentage, 2), "%" 
       ), 
       hoverinfo = 'text', 
@@ -394,11 +504,11 @@ server <- function(input, output) {
     } else if (selected_label == "Total") {  
       
       
-      filtered_data <- raw_data |> 
+      filtered_data <- air_pollutant_data |> 
         filter(pollutant == input$pollutant) |> 
-        group_by(NFR_wide.y, year, status, Units) |> 
+        group_by(wide_col, year, status, Units) |> 
         summarise(emission = sum(emission, na.rm = T)) |> 
-        rename(source = NFR_wide.y) |> 
+        rename(source = wide_col) |> 
         group_by(year, Units, status) |> 
         summarise(emission = sum(emission, na.rm = T)) |> 
         mutate(source = "Total")
@@ -407,10 +517,10 @@ server <- function(input, output) {
       
       # So if it is the lowest level, its fine to keep the source description as the filter criteria as this is what it is based upon
       
-      filtered_data <- raw_data |> 
+      filtered_data <- air_pollutant_data |> 
         filter(source_description == selected_label) |> 
         filter(pollutant == input$pollutant) |>  
-        left_join(colour_key, by = join_by(NFR_wide.y)) |> 
+        left_join(colour_key, by = join_by(wide_col)) |> 
         mutate(source = source_description)
       
     } else if (hierachial_data()$level[point_index] ==  "parent") {
@@ -420,20 +530,20 @@ server <- function(input, output) {
       
       # Instead of plotting only the parent total,
         # get all of its children (source_description)
-        filtered_data <- raw_data |>
+        filtered_data <- air_pollutant_data |>
         filter(pollutant == input$pollutant) |>
-        filter(NFR_mid == selected_label) |> 
+        filter(mid_col == selected_label) |> 
         group_by(source_description, year, status, Units) |> 
         summarise(emission = sum(emission, na.rm = TRUE), .groups = "drop") |>
         rename(source = source_description)
       
     } else if (hierachial_data()$level[point_index] == "grandparent") {
       
-      filtered_data <- raw_data |> 
+      filtered_data <- air_pollutant_data |> 
         filter(pollutant == input$pollutant) |> 
-        group_by(NFR_wide.y, year, status, Units) |> 
+        group_by(wide_col, year, status, Units) |> 
         summarise(emission = sum(emission, na.rm = T)) |> 
-        rename(source = NFR_wide.y) |> 
+        rename(source = wide_col) |> 
         filter(source == selected_label)
     } 
       
@@ -524,7 +634,7 @@ server <- function(input, output) {
     req(input$pollutant) 
     
     # Main source in 1990
-    top_1990 <- raw_data |>
+    top_1990 <- air_pollutant_data |>
       filter(pollutant == input$pollutant, year == "1990-01-01") |>
       group_by(source_description, Units) |>
       summarise(total_emission = sum(emission, na.rm = TRUE)) |>
@@ -532,7 +642,7 @@ server <- function(input, output) {
       head(n = 1)
     
     # Main source in 2050
-    top_2050 <- raw_data |>
+    top_2050 <- air_pollutant_data |>
       filter(pollutant == input$pollutant, year == "2050-01-01") |>
       group_by(source_description, Units) |>
       summarise(total_emission = sum(emission, na.rm = TRUE)) |>
@@ -559,7 +669,45 @@ server <- function(input, output) {
     
   })
   
-  
+
+# GREENHOUSE GASES --------------------------------------------------------
+
+  output$ghg_sunburst <- renderPlotly({
+    
+    colours <- hierachial_data_ghg()$colour
+    
+    
+    validate(
+      need(sum(hierachial_data_ghg()$emission) != 0, paste0("Sorry, there are no projections available for ", input$ghg))
+    )
+    
+    
+    plot_ly(
+      labels = hierachial_data_ghg()$label, 
+      parents = hierachial_data_ghg()$parent,
+      values = hierachial_data_ghg()$emission,
+      type = 'sunburst',
+      source = "sunburst",
+      branchvalues = 'total',
+      marker = list(colors =  colours,
+                    line = list(color = "white", width = 1)),
+      insidetextorientation = 'radial', 
+      text = paste0(
+        hierachial_data_ghg()$label, "<br>",
+        round(hierachial_data_ghg()$emission, 2), " ",
+        unique(ghg_data$Units[ghg_data$pollutant == input$ghg]), "<br>",
+        round(hierachial_data_ghg()$percentage, 2), "%" 
+      ), 
+      hoverinfo = 'text', 
+      textinfo = 'text',
+    ) |> layout(
+      font = list(color = if (input$mode == "dark") "white" else "black"),
+      paper_bgcolor = "rgba(0,0,0,0)",  # Fully transparent background
+      plot_bgcolor = "rgba(0,0,0,0)"  # Background of the plotting region is transparent too )  
+    )
+    
+    
+  })
   
 }
   
