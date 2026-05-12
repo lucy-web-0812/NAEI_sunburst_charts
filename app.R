@@ -16,10 +16,10 @@ pollutants_and_units <- read_csv("list_of_pollutants.csv") |>
 # Pre-processing 
 
 air_pollutant_data <- read.csv("combined_historic_and_projected.csv") |>  # Note that need read.csv to get the right pollutant format for the join! Don't know why! 
-  mutate(NFR_wide.y = ifelse(NFR_wide.y == "Fuel Combustion Activities", NFR_mid, NFR_wide.y)) |> 
-  mutate(NFR_wide.y = ifelse(NFR_wide.y %in% c("Volcanoes", "Forest fires", "Other natural emissions (please specify in the IIR)"), "Other", NFR_wide.y)) |> 
-  mutate(NFR_wide.y = ifelse(str_detect(NFR_wide.y, "Other"), "Other", NFR_wide.y)) |> 
-  mutate(NFR_wide.y = ifelse(str_detect(NFR_wide.y, "Other") & Code_2 == "1A", "Combustion: Other", NFR_wide.y)) |> 
+  mutate(NFR_wide.y = ifelse(NFR_wide.y == "Fuel Combustion Activities", NFR_mid, NFR_wide.y)) |>
+  mutate(NFR_wide.y = ifelse(NFR_wide.y %in% c("Volcanoes", "Forest fires", "Other natural emissions (please specify in the IIR)"), "Other", NFR_wide.y)) |>
+  mutate(NFR_wide.y = ifelse(str_detect(NFR_wide.y, "Other"), "Other", NFR_wide.y)) |>
+  mutate(NFR_wide.y = ifelse(str_detect(NFR_wide.y, "Other") & Code_2 == "1A", "Combustion: Other", NFR_wide.y)) |>
   left_join(pollutants_and_units, join_by(pollutant == Pollutant)) |> 
   select(-c(`X`, `...1`)) |> 
   rename(wide_col = NFR_wide.y, mid_col = NFR_mid)
@@ -29,8 +29,10 @@ air_pollutant_data <- read.csv("combined_historic_and_projected.csv") |>  # Note
 ghg_data <- read_csv("ghg_data.csv") |> 
   select(-`...1`) |> 
   filter(CRT_Code != "non-IPCC") |> 
-  filter(is.na(CRT_wide) == F ) |> 
-  mutate(CRT_wide = ifelse(CRT_mid == "Fuel Combustion Activities", CRT_mid, CRT_wide))  |> 
+  filter(is.na(Code_1) == F ) |> 
+  filter(!is.na(emission)) |> 
+  # mutate(CRT_wide = ifelse(CRT_mid == "Fuel Combustion Activities", CRT_mid, CRT_wide))  |>
+  # mutate(CRT_wide = ifelse(substr(CRT_Code, 1,3) == "1A3", "Transport", CRT_wide)) |>
   rename(wide_col = CRT_wide, mid_col = CRT_mid, pollutant = greenhouse_gas) |> 
   mutate(year = as.character(paste0(year, "-01-01")))
 
@@ -43,11 +45,11 @@ ghg_data <- read_csv("ghg_data.csv") |>
 # For the purposes of visualisation, I think we need to break up the Fuel Combustion Activities section... 
 
 
-num_colours <- length(unique(air_pollutant_data$wide_col))
+num_colours <- length(unique(c(air_pollutant_data$wide_col, ghg_data$wide_col)))
 base_colours <- c("#B39DDB","#1F618D","#E573A0","#006400" , "#F4D03F", "#FF7F50", "#C0392B", "#76D7C4",  "#5DADE2", "yellow", "green", "blue", "orange") # RColorBrewer::brewer.pal(9, "Set1")
 
 
-colour_key <- data.frame(grandparent_colour = base_colours[1:num_colours], wide_col = unique(air_pollutant_data$wide_col))
+colour_key <- data.frame(grandparent_colour = base_colours[1:num_colours], wide_col = unique(c(air_pollutant_data$wide_col, ghg_data$wide_col)))
 
 
 
@@ -60,9 +62,17 @@ lighten_colour <- function(colour, factor) {
 }
 
 
+ghg_for_colours <- ghg_data |> 
+  select(Source, wide_col, mid_col, source_description) |> 
+  rename(source = Source)
+
+
 # Joining the colour data to the raw data set, adding the parent and child colours 
 
 colour_data <- air_pollutant_data |> 
+  select(source, wide_col, mid_col, source_description) |> 
+  rbind(ghg_for_colours) |> 
+  distinct() |> 
   left_join(colour_key, by = join_by(wide_col)) |> 
   mutate(
     parent_colour = sapply(grandparent_colour, lighten_colour, factor = 0.1),  
@@ -70,14 +80,18 @@ colour_data <- air_pollutant_data |>
   )
 
 
+
 # and mapping colours for the line chart data
 
 line_colour_map <- colour_data |>
-  select(source, wide_col, source_description, child_colour) |>
+  select(source, wide_col, mid_col, source_description, child_colour) |>
   distinct() |>
-  pivot_longer(cols = c(source, source_description, wide_col), names_to = "heirachy", values_to = "source") |> 
+  pivot_longer(cols = c(source, source_description,mid_col, wide_col), names_to = "heirachy", values_to = "source") |> 
   select(source, child_colour) |> 
-  rename(historic_colour = child_colour)
+  rename(historic_colour = child_colour) |> 
+  distinct()  |> 
+  add_row(source = "Total",  historic_colour = "white") # And the totals colours....
+
 
 
 
@@ -164,6 +178,8 @@ sunburst_dataprocessing <- function(raw_data_to_process, pollutant_species, sele
     select(c(source_description, mid_col, emission)) |> 
     rename(label = source_description, parent = mid_col) |> 
     filter((label == parent) == F) |> 
+    group_by(label, parent) |> 
+    summarise(emission = sum(emission)) |> 
     distinct() |> 
     left_join(filter(colour_mapping, level == "child"), by = join_by(label))
   
@@ -175,7 +191,8 @@ sunburst_dataprocessing <- function(raw_data_to_process, pollutant_species, sele
     df_wide, 
     df_mid, 
     df_source
-  ) 
+  ) |>
+    distinct(label, parent, .keep_all = TRUE)
   
   return(hierachial_data)
   
@@ -201,12 +218,19 @@ ui <- tagList(
     tags$meta(property = "og:image", content = "https://github.com/lucy-web-0812/NAEI_sunburst_charts/blob/main/shinyappimage.png"),
     tags$meta(property = "og:type", content = "website"),
     
+    # Import Google Font
+    tags$link(
+      rel = "stylesheet",
+      href = "https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap"
+    ),
+    
+    
     # CSS for fonts and responsive tweaks
     tags$style(HTML("
       body, pre, .shiny-text-output, .shiny-verbatim-text-output,
       .js-plotly-plot .plotly text, .js-plotly-plot .hovertext,
       svg text, .d3-tip, .axis text {
-        font-family: Consolas, 'Courier New', monospace !important;
+         font-family: 'Figtree', sans-serif !important;
         font-size: 1.1em !important;
       }
       @media (max-width: 768px) {
@@ -296,7 +320,7 @@ ui <- tagList(
       
       
       nav_panel(
-        "Greenhouse Gases",
+        "Greenhouse Gases - In Development",
         
         fluidRow(
           
@@ -350,7 +374,7 @@ ui <- tagList(
               ),
               
               withSpinner(
-                plotlyOutput("ghg_totals_graph", height = "50vh"),
+                plotlyOutput("totals_graph_ghg", height = "50vh"),
                 color = "#0dc5c1",
                 type = 6
               )
@@ -687,7 +711,7 @@ server <- function(input, output) {
       parents = hierachial_data_ghg()$parent,
       values = hierachial_data_ghg()$emission,
       type = 'sunburst',
-      source = "sunburst",
+      source = "ghg_sunburst",
       branchvalues = 'total',
       marker = list(colors =  colours,
                     line = list(color = "white", width = 1)),
@@ -708,6 +732,181 @@ server <- function(input, output) {
     
     
   })
+  
+  
+  
+  
+  
+  output$totals_graph_ghg <- renderPlotly({
+    
+    # Need a pollutant to be selected to run the code 
+    
+    req(input$ghg) 
+    
+    # If the user clicks on the plot, records the info
+    
+    click_event <- event_data("plotly_click", source = "ghg_sunburst")  # Capture click event
+    
+    point_index <- click_event$pointNumber + 1
+    
+    selected_label <- hierachial_data_ghg()$label[point_index]  # Extract the correct label
+    
+    parent_of_selection <- hierachial_data_ghg()$parent[point_index] # And the parent
+    
+    
+    if (is.null(click_event)) {return(
+      plot_ly(
+        type = 'scatter',
+        mode = 'text',
+        text = "Please click on a section of the chart.",
+        x = c(0.5),
+        y = c(0.5),
+        textposition = "middle center"
+      ) |> layout(
+        xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+        yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE), 
+        plot_bgcolor = "rgba(0,0,0,0)",   # Transparent plot area
+        paper_bgcolor = "rgba(0,0,0,0)",   # Transparent outer area
+        font = list(color = if (input$mode == "dark") "white" else "black")
+      )
+    )
+      
+    } else if (selected_label == "Total") {  
+      
+      
+      filtered_data <- ghg_data |> 
+        filter(pollutant == input$ghg) |> 
+        group_by(wide_col, year, Units) |> 
+        summarise(emission = sum(emission, na.rm = T)) |> 
+        rename(source = wide_col) |> 
+        group_by(year, Units) |> 
+        summarise(emission = sum(emission, na.rm = T)) |> 
+        mutate(source = "Total")
+      
+    } else if (hierachial_data_ghg()$level[point_index] ==  "child") {
+      
+      # So if it is the lowest level, its fine to keep the source description as the filter criteria as this is what it is based upon
+      
+      filtered_data <- ghg_data |> 
+        filter(source_description == selected_label) |> 
+        filter(pollutant == input$ghg) |>  
+        left_join(colour_key, by = join_by(wide_col)) |> 
+        mutate(source = paste(source_description, Activity, Source))
+      
+    } else if (hierachial_data_ghg()$level[point_index] ==  "parent") {
+      
+      # However, it needs to be different for the next level up.
+      #### AT THE MOMENT we have the wrong order of what is being selected, in that we want to see breakdown befpre clicking. Parent and child should be the same (coode for the chuld atm)
+      
+      # Instead of plotting only the parent total,
+      # get all of its children (source_description)
+      filtered_data <- ghg_data |>
+        filter(pollutant == input$ghg) |>
+        filter(mid_col == selected_label) |> 
+        group_by(source_description, year,  Units) |> 
+        summarise(emission = sum(emission, na.rm = TRUE), .groups = "drop") |>
+        rename(source = source_description)
+      
+    } else if (hierachial_data_ghg()$level[point_index] == "grandparent") {
+      
+      filtered_data <- ghg_data |> 
+        filter(pollutant == input$ghg) |> 
+        group_by(wide_col, year, Units) |> 
+        summarise(emission = sum(emission, na.rm = T)) |> 
+        rename(source = wide_col) |> 
+        filter(source == selected_label)
+    } 
+    
+    
+    
+    
+    data_for_export  <<- filtered_data |> 
+      mutate(pollutant = input$ghg) |> 
+      rename(units = Units) |> 
+      select(pollutant, source, year, emission, units)
+    
+    
+    
+    
+    filtered_data_with_colours <- filtered_data |>  
+      left_join(line_colour_map, by = "source") |>
+      mutate(historic_colour = ifelse(is.na(historic_colour), grandparent_colour, historic_colour)) |> 
+      # mutate(
+      #   plot_colour = ifelse(status == "Historic", historic_colour, "darkgrey")
+      # ) |> 
+      mutate(plot_colour = ifelse(source == "Total"  & input$mode == "light", "#394F49", historic_colour))  |> 
+      group_by(source)
+    
+    
+    ggplotly(
+      ggplot(filtered_data_with_colours) +
+        geom_point(
+          aes(
+            x = as.Date(year),
+            y = emission,
+            colour = plot_colour, 
+            group = source,   
+            #shape = status,
+            #linetype = status,
+            text = paste0(
+              "Year: ", substr(as.character(year),1,4),
+              "<br>Emission: ", round(emission, 2), " ", Units,
+             # "<br>Status: ", status,
+              "<br>Source: ", source
+            )
+          )
+        ) +
+        geom_line(
+          aes(
+            x = as.Date(year),
+            y = emission,
+            colour = plot_colour,
+            group = source,
+            #linetype = status,
+            text = paste0(
+              "Year: ", substr(as.character(year),1,4),
+              "<br>Emission: ", round(emission, 2), " ", Units,
+             # "<br>Status: ", status,
+              "<br>Source: ", source
+            )
+          )
+        ) +
+        scale_colour_identity() +
+        scale_x_date(name = "Year", limits = c(as.Date("1990-01-01"), as.Date("2050-12-31"))) +
+        scale_y_continuous(name = paste0("Emissions (", unique(filtered_data$Units), ")"), limits = c(0,NA)) +
+        ggtitle(ggtitle(paste(unique(filtered_data$source), collapse = ", "))) +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.major.y = element_line(colour = "lightgrey"),
+              plot.title = element_text(face = "bold"), 
+              legend.position = "none", 
+              panel.background = element_rect("white"), 
+              plot.background = element_rect("white")), 
+      tooltip = "text"
+    ) |>
+      layout(legend = list(
+        x = 0.75,
+        y = 0.85
+      ), 
+      paper_bgcolor = "rgba(0,0,0,0)",  # Fully transparent background
+      plot_bgcolor = "rgba(0,0,0,0)" , # Background of the plotting region is transparent too ) ) 
+      margin = list(t = 80) )
+  })
+  
+  output$download_ghg <- downloadHandler(
+    filename = paste0(input$ghg,"_data.csv"),
+    content = function(file) {
+      readr::write_csv(data_for_export, file)
+    }
+  )
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
 }
   
