@@ -192,12 +192,20 @@ ui <- tagList(
     tags$meta(property = "og:image", content = "https://github.com/lucy-web-0812/NAEI_sunburst_charts/blob/main/shinyappimage.png"),
     tags$meta(property = "og:type", content = "website"),
     
+    
+    # Import Google Font
+    tags$link(
+      rel = "stylesheet",
+      href = "https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap"
+    ),
+    
+    
     # CSS for fonts and responsive tweaks
     tags$style(HTML("
       body, pre, .shiny-text-output, .shiny-verbatim-text-output,
       .js-plotly-plot .plotly text, .js-plotly-plot .hovertext,
       svg text, .d3-tip, .axis text {
-        font-family: Consolas, 'Courier New', monospace !important;
+        font-family: 'Figtree', sans-serif !important;
         font-size: 1.1em !important;
       }
       @media (max-width: 768px) {
