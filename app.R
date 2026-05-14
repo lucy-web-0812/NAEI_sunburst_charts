@@ -13,6 +13,7 @@ pollutants_and_units <- read_csv("list_of_pollutants.csv") |>
   mutate(Pollutant = gsub("[\r]", "", Pollutant), 
          Pollutant = ifelse(Pollutant == "Total 1-4", "Total PAHs", Pollutant)) 
 
+
 # Pre-processing 
 
 air_pollutant_data <- read.csv("combined_historic_and_projected.csv") |>  # Note that need read.csv to get the right pollutant format for the join! Don't know why! 
@@ -31,12 +32,12 @@ ghg_data <- read_csv("ghg_data.csv") |>
   filter(CRT_Code != "non-IPCC") |> 
   filter(is.na(Code_1) == F ) |> 
   filter(!is.na(emission)) |> 
-  # mutate(CRT_wide = ifelse(CRT_mid == "Fuel Combustion Activities", CRT_mid, CRT_wide))  |>
+  mutate(CRT_wide = ifelse(CRT_mid == "Fuel Combustion Activities", CRT_mid, CRT_wide))  |>
+  mutate(CRT_mid = ifelse(CRT_mid == "Fuel Combustion Activities", source_description, CRT_mid))  |>
+  mutate(source_description = ifelse(CRT_wide == "Fuel Combustion Activities", paste0(source_description, ": ", Activity), source_description)) |>
   # mutate(CRT_wide = ifelse(substr(CRT_Code, 1,3) == "1A3", "Transport", CRT_wide)) |>
   rename(wide_col = CRT_wide, mid_col = CRT_mid, pollutant = greenhouse_gas) |> 
   mutate(year = as.character(paste0(year, "-01-01")))
-
-
 
 
 
