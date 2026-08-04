@@ -20,6 +20,12 @@ An interactive Shiny web application for exploring UK air pollutant emissions da
 -   **Source-Specific Trends**: Click sunburst sections to see individual source trends
 -   **Contextual Information**: Background commentary for each pollutant (only basic at the moment but I hope to improve this!)
 
+### 🌍 Greenhouse Gases
+
+-   A second tab covering UK greenhouse gas emissions (CO2, methane, nitrous oxide, HFCs, PFCs, SF6) using the same sunburst + trend chart interaction as the Air Pollutants tab
+-   Uses CRT (Common Reporting Table) categories, mapped onto the same sector groupings as the air pollutant data
+-   Historic data only (1990 onwards) - no projections are currently published for greenhouse gases
+
 
 ## Data Sources
 
@@ -38,9 +44,11 @@ The application uses data from the **National Atmospheric Emissions Inventory (N
 
 ```         
 your-app-directory/
-├── app.R                              # Main application file
-├── combined_historic_and_projected.csv # Data file
-├── README.md                          # This file
+├── app.R                                # Main application file
+├── combined_historic_and_projected.csv  # Air pollutant data
+├── ghg_data.csv                         # Greenhouse gas data
+├── list_of_pollutants.csv               # Pollutant name/unit lookup
+├── README.md                            # This file
 
 ```
 
@@ -57,10 +65,9 @@ base_colours <- c("#your_color1", "#your_color2", ...)
 
 ### Enhancing Commentary
 
-Add pollutant-specific information in the `get_commentary()` function:
-
-``` r
-"Your_Pollutant" = "Your custom commentary about this pollutant..."
-```
+The background commentary text is generated in `output$commentary` (Air
+Pollutants tab) and `output$commentary_ghg` (Greenhouse Gases tab) in
+`app.R`, which currently report the largest source in the first and last
+available years for the selected pollutant/gas.
 
 
