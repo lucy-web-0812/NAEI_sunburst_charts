@@ -398,7 +398,8 @@ ui <- tagList(
     tags$meta(property = "og:description", content = "Interactive visualisation of historical and projected UK air pollutant emissions by source."),
     tags$meta(property = "og:image", content = "https://github.com/lucy-web-0812/NAEI_sunburst_charts/blob/main/shinyappimage.png"),
     tags$meta(property = "og:type", content = "website"),
-
+    
+    
     # Import Google Font
     tags$link(
       rel = "stylesheet",
