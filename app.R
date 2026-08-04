@@ -17,10 +17,30 @@ pollutants_and_units <- read_csv("list_of_pollutants.csv") |>
 # Pre-processing 
 
 air_pollutant_data <- read.csv("combined_historic_and_projected.csv") |>  # Note that need read.csv to get the right pollutant format for the join! Don't know why! 
-  mutate(NFR_wide.y = ifelse(NFR_wide.y == "Fuel Combustion Activities", NFR_mid, NFR_wide.y)) |>
-  mutate(NFR_wide.y = ifelse(NFR_wide.y %in% c("Volcanoes", "Forest fires", "Other natural emissions (please specify in the IIR)"), "Other", NFR_wide.y)) |>
-  mutate(NFR_wide.y = ifelse(str_detect(NFR_wide.y, "Other"), "Other", NFR_wide.y)) |>
-  mutate(NFR_wide.y = ifelse(str_detect(NFR_wide.y, "Other") & Code_2 == "1A", "Combustion: Other", NFR_wide.y)) |>
+  mutate(NFR_wide.y = case_when(
+    Code_3 == "1A1" ~ "Energy Supply",
+    Code_3 == "1A2" ~ "Industrial Combustion",
+    Code_3 == "1A3" ~ "Transport",
+    Code_3 == "1A4" ~ "Residential & Commercial Combustion",
+    Code_3 == "1A5" ~ "Other Combustion",
+    Code_2 == "1A"  ~ "Other Combustion",   # catches NA Code_3 under 1A
+    Code_2 == "1B"  ~ "Fugitive Emissions",
+    Code_2 %in% c("2A","2B","2C","2D","2G","2H","2I","2J","2K","2L") ~ "Industrial Processes",
+    Code_2 %in% c("3B","3D","3F","3I") ~ "Agriculture",
+    Code_2 %in% c("5A","5B","5C","5D","5E") ~ "Waste",
+    TRUE ~ "Other"  # z_, 6A, 6B, 11A, memo/natural sources
+  ))  |> 
+  mutate(NFR_mid = ifelse(Code_2 %in% c("1A", "1B"), source_description, NFR_mid)) |>
+  mutate(NFR_wide.y = ifelse(
+    NFR_wide.y == "Other" & NFR_mid == "Transport", 
+    "Transport", 
+    NFR_wide.y
+  ), 
+    NFR_mid = ifelse(
+      NFR_wide.y == "Other" & NFR_mid == "Transport", 
+    "International Transport", 
+    NFR_mid
+  ) )|> 
   left_join(pollutants_and_units, join_by(pollutant == Pollutant)) |> 
   select(-c(`X`, `...1`)) |> 
   rename(wide_col = NFR_wide.y, mid_col = NFR_mid)
@@ -32,10 +52,36 @@ ghg_data <- read_csv("ghg_data.csv") |>
   filter(CRT_Code != "non-IPCC") |> 
   filter(is.na(Code_1) == F ) |> 
   filter(!is.na(emission)) |> 
-  mutate(CRT_wide = ifelse(CRT_mid == "Fuel Combustion Activities", CRT_mid, CRT_wide))  |>
-  mutate(CRT_mid = ifelse(CRT_mid == "Fuel Combustion Activities", source_description, CRT_mid))  |>
-  mutate(source_description = ifelse(CRT_wide == "Fuel Combustion Activities", paste0(source_description, ": ", Activity), source_description)) |>
-  # mutate(CRT_wide = ifelse(substr(CRT_Code, 1,3) == "1A3", "Transport", CRT_wide)) |>
+  mutate(CRT_wide = case_when(
+    # Split fuel combustion (1A) into meaningful sectors by sub-code
+    substr(CRT_Code, 1, 3) == "1A1" ~ "Energy Supply",
+    substr(CRT_Code, 1, 3) == "1A2" ~ "Industrial Combustion",
+    substr(CRT_Code, 1, 3) == "1A3" ~ "Transport",
+    substr(CRT_Code, 1, 3) == "1A4" ~ "Residential & Commercial Combustion",
+    substr(CRT_Code, 1, 2) == "1A"  ~ "Other Combustion",
+    substr(CRT_Code, 1, 2) == "1B"  ~ "Fugitive Emissions",
+    substr(CRT_Code, 1, 1) == "2"   ~ "Industrial Processes",
+    substr(CRT_Code, 1, 1) == "3"   ~ "Agriculture",
+    substr(CRT_Code, 1, 1) == "4"   ~ "Land Use (LULUCF)",
+    substr(CRT_Code, 1, 1) == "5"   ~ "Waste",
+    TRUE ~ "Other"  # Keep all other wide categories as-is 
+  )) |>
+  mutate(CRT_mid = case_when(
+    # For combustion sectors, use source_description as the mid level
+    substr(CRT_Code, 1, 2) == "1A" ~ source_description,
+    substr(CRT_Code, 1, 2) == "1B" ~ source_description,
+    TRUE ~ CRT_mid
+  )) |>
+  mutate(CRT_wide = ifelse(
+    CRT_wide == "Other" & CRT_mid == "International Transport", 
+    "Transport", 
+    CRT_wide
+  ), 
+  NFR_mid = ifelse(
+    CRT_wide == "Other" & CRT_mid == "International Transport", 
+    "International Transport", 
+    CRT_mid
+  ) ) |> 
   rename(wide_col = CRT_wide, mid_col = CRT_mid, pollutant = greenhouse_gas) |> 
   mutate(year = as.character(paste0(year, "-01-01")))
 
